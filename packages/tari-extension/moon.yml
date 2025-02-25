@@ -1,0 +1,38 @@
+language: "typescript"
+platform: "node"
+type: "library"
+
+fileGroups:
+  configs:
+    - "tsconfig.json"
+    - "package.json"
+  sources:
+    - "src/**/*"
+
+tasks:
+  build:
+    command: "pnpm run build"
+    inputs:
+      - "@files(sources)"
+      - "@files(configs)"
+    outputs:
+      - "dist"
+    deps:
+      - "tari-extension-common:build"
+  watch:
+    command: "pnpm run watch"
+    inputs:
+      - "@files(sources)"
+      - "@files(configs)"
+  format:
+    command: "pnpm run format"
+    inputs:
+      - "@files(sources)"
+      - "@files(configs)"
+  lint:
+    command: "pnpm run lint"
+    inputs:
+      - "@files(sources)"
+      - "@files(configs)"
+    deps:
+      - "compile"

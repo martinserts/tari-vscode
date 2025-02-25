@@ -1,0 +1,42 @@
+{
+  "name": "tari-extension",
+  "version": "0.0.1",
+  "description": "Tari VS Code extension entry point",
+  "main": "./dist/extension.js",
+  "scripts": {
+		"vscode:prepublish": "pnpm run build",
+    "build": "tsc",
+		"watch": "tsc --watch",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint .",
+    "format": "prettier --check ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "catalog:",
+    "@types/node": "catalog:",
+    "@types/vscode": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:"
+  },
+  "dependencies": {
+    "tari-extension-common": "workspace:^"
+  },
+	"activationEvents": [],
+	"contributes": {
+		"commands": [
+			{
+				"command": "extension.helloWorld",
+				"title": "Hello World"
+			}
+		]
+	},
+  "engines": {
+    "vscode": "^1.97.2"
+  },
+  "packageManager": "pnpm@10.4.1"
+}
