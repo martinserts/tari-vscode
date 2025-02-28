@@ -1,0 +1,42 @@
+{
+  "name": "tari-extension-webview",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tari-project/tarijs": "^0.4.0",
+    "@tari-project/wallet-connect-provider": "^0.4.0",
+    "@tari-project/wallet-daemon-provider": "^0.4.0",
+    "@vscode-elements/react-elements": "^0.9.0",
+    "@vscode/codicons": "^0.0.36",
+    "flexboxgrid": "^6.3.1",
+    "i": "^0.3.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tari-extension-common": "workspace:^"
+  },
+  "devDependencies": {
+    "@eslint/js": "catalog:",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@types/vscode-webview": "^1.57.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vscode-elements/webview-playground": "^1.6.0",
+    "eslint": "catalog:",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vite": "^6.2.0"
+  }
+}

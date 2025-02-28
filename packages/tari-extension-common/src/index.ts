@@ -1,3 +1,1 @@
-export enum SomeEnum {
-    A = 'a',
-};
+export * from "./messaging";

@@ -11,7 +11,9 @@ fileGroups:
 
 tasks:
   build:
-    command: "pnpm run build"
+    command: "pnpm run build && \
+              mkdir -p dist/webview && \ 
+              cp -R ../tari-extension-webview/dist/* dist/webview"
     inputs:
       - "@files(sources)"
       - "@files(configs)"
@@ -19,6 +21,7 @@ tasks:
       - "dist"
     deps:
       - "tari-extension-common:build"
+      - "tari-extension-webview:build"
   watch:
     command: "pnpm run watch"
     inputs:
@@ -35,4 +38,5 @@ tasks:
       - "@files(sources)"
       - "@files(configs)"
     deps:
-      - "compile"
+      - "format"
+      - "build"

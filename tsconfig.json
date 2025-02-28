@@ -13,6 +13,15 @@
     },
     {
       "path": "./packages/tari-extension-common/"
+    },
+    {
+      "path": "packages/tari-extension"
+    },
+    {
+      "path": "packages/tari-extension-common"
+    },
+    {
+      "path": "packages/tari-extension-webview"
     }
   ]
 }

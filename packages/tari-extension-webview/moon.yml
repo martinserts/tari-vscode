@@ -6,31 +6,26 @@ fileGroups:
   configs:
     - "tsconfig.json"
     - "package.json"
+    - "eslint.config.js"
+    - "tsconfig.app.json"
+    - "tsconfig.json"
+    - "tsconfig.node.json"
+    - "vite.config.ts"
   sources:
+    - "index.html"
+    - "vite.config.ts"
     - "src/**/*"
 
 tasks:
-  build-cjs:
-    command: "pnpm run build:cjs"
-    inputs:
-      - "@files(sources)"
-      - "@files(configs)"
-    outputs:
-      - "dist/cjs"
-  build-esm:
-    command: "pnpm run build:esm"
-    inputs:
-      - "@files(sources)"
-      - "@files(configs)"
-    outputs:
-      - "dist/esm"
   build:
+    command: "pnpm run build"
     inputs:
       - "@files(sources)"
       - "@files(configs)"
+    outputs:
+      - "dist"
     deps:
-      - "build-cjs"
-      - "build-esm"
+      - "tari-extension-common:build"
   format:
     command: "pnpm run format"
     inputs:

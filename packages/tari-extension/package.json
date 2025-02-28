@@ -1,17 +1,24 @@
 {
   "name": "tari-extension",
+  "publisher": "tari-labs",
   "version": "0.0.1",
-  "description": "Tari VS Code extension entry point",
+  "displayName": "Tari Ootle",
+  "description": "Improves the Tari experience",
+  "keywords": [
+    "tari",
+    "ootle",
+    "crypto"
+  ],
+  "icon": "TODO",
   "main": "./dist/extension.js",
   "scripts": {
-		"vscode:prepublish": "pnpm run build",
+    "vscode:prepublish": "pnpm run build",
     "build": "tsc",
-		"watch": "tsc --watch",
+    "watch": "tsc --watch",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint .",
     "format": "prettier --check ."
   },
-  "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
@@ -26,17 +33,35 @@
   "dependencies": {
     "tari-extension-common": "workspace:^"
   },
-	"activationEvents": [],
-	"contributes": {
-		"commands": [
-			{
-				"command": "extension.helloWorld",
-				"title": "Hello World"
-			}
-		]
-	},
+  "activationEvents": [],
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.tari",
+        "title": "Tari Extension"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "tariActivityBarContainer",
+          "title": "Tari",
+          "icon": "resources/tari.svg"
+        }
+      ]
+    },
+    "views": {
+      "tariActivityBarContainer": [
+        {
+          "type": "webview",
+          "id": "tariActivityBarView",
+          "name": "Tari"
+        }
+      ]
+    }
+  },
   "engines": {
-    "vscode": "^1.97.2"
+    "vscode": "^1.74.0"
   },
   "packageManager": "pnpm@10.4.1"
 }
