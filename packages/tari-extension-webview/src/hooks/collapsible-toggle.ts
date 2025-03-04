@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
+import * as ve from "@vscode-elements/elements";
 
 export function useCollapsibleToggle(onToggle: (open: boolean) => void) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-redundant-type-constituents
-  const collapsibleRef = useRef<any | null>(null);
+  const collapsibleRef = useRef<ve.VscodeCollapsible | null>(null);
 
   useEffect(() => {
     if (!collapsibleRef.current) return;

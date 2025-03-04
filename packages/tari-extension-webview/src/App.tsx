@@ -33,7 +33,7 @@ function App() {
         {import.meta.env.DEV ? <vscode-dev-toolbar></vscode-dev-toolbar> : null}
 
         <Providers configuration={configuration} />
-        { provider && <ProviderActions provider={provider} /> }
+        {provider && <ProviderActions provider={provider} />}
       </>
     );
   } else {

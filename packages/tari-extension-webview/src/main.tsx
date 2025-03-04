@@ -21,7 +21,7 @@ useTariStore.setState({ vscode, messenger });
 
 messenger.registerHandler("configurationChanged", (configuration) => {
   const setConfiguration = useTariStore((state) => state.setConfiguration);
-  setConfiguration(configuration)
+  setConfiguration(configuration);
   return Promise.resolve(undefined);
 });
 

@@ -1,4 +1,4 @@
-import { VscodeTree } from "@vscode-elements/react-elements";
+import { VscodeLabel, VscodeTree } from "@vscode-elements/react-elements";
 import { JsonOutlineItem } from "tari-extension-common";
 import { VscTreeSelectEvent } from "@vscode-elements/elements/dist/vscode-tree/vscode-tree";
 
@@ -26,9 +26,11 @@ function JsonOutlineTree({ items, onSelect }: JsonOutlineProps) {
       value: idx.toString(),
     };
   });
+  const hasItems = treeItems.length > 0;
   return (
     <>
-      <VscodeTree data={treeItems} onVscTreeSelect={handleSelect}/>
+      {hasItems && <VscodeTree data={treeItems} onVscTreeSelect={handleSelect} />}
+      {!hasItems && <VscodeLabel>No Items</VscodeLabel>}
     </>
   );
 }

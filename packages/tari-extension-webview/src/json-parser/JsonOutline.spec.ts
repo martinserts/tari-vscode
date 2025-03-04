@@ -9,7 +9,7 @@ describe(JsonOutline, () => {
   it("can parse account details", async () => {
     const data = await fetchTestData("account.json");
     const outline = parseDocument("Account", data, ACCOUNT_KNOWN_PARTS);
-    
+
     expect(outline.items).toStrictEqual([
       { title: "Account ID", details: undefined, offset: 4, length: 12, icon: "account" },
       { title: "Address", details: undefined, offset: 23, length: 9, icon: "briefcase" },

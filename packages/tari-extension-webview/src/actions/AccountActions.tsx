@@ -1,5 +1,6 @@
 import { TariProvider } from "@tari-project/tarijs";
-import { VscodeCollapsible, VscodeIcon, VscodeProgressRing } from "@vscode-elements/react-elements";
+import { VscodeCollapsible, VscodeDivider, VscodeIcon, VscodeProgressRing } from "@vscode-elements/react-elements";
+import * as ve from "@vscode-elements/elements";
 import { useCollapsibleToggle } from "../hooks/collapsible-toggle";
 import { useTariStore } from "../store/tari-store";
 import { useEffect, useRef, useState } from "react";
@@ -14,8 +15,7 @@ interface AccountActionsProps {
 }
 
 function AccountActions({ provider }: AccountActionsProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-redundant-type-constituents
-  const refreshRef = useRef<any | null>(null);
+  const refreshRef = useRef<ve.VscodeIcon | null>(null);
   const messenger = useTariStore((state) => state.messenger);
   const [jsonDocument, setJsonDocument] = useState<JsonDocument | undefined>(undefined);
   const [outlineItems, setOutlineItems] = useState<JsonOutlineItem[]>([]);
@@ -25,7 +25,7 @@ function AccountActions({ provider }: AccountActionsProps) {
     event.stopPropagation();
     void fetchAccountInformation();
   };
-  
+
   const handleItemSelect = async (item: JsonOutlineItem) => {
     if (messenger && jsonDocument) {
       await messenger.send("showJsonOutline", {
@@ -50,19 +50,22 @@ function AccountActions({ provider }: AccountActionsProps) {
   const fetchAccountInformation = async () => {
     if (messenger) {
       setLoading(true);
-      const account = await provider.getAccount();
+      try {
+        const account = await provider.getAccount();
+        const document = new JsonDocument("Account", account);
+        setJsonDocument(document);
+        const outline = new JsonOutline(document, ACCOUNT_KNOWN_PARTS);
+        setOutlineItems(outline.items);
+
+        await messenger.send("showJsonOutline", {
+          id: document.id,
+          json: document.jsonString,
+          outlineItems: outline.items,
+        });
+      } catch (error: unknown) {
+        await messenger.send("showError", { message: "Failed to get account info", detail: String(error) });
+      }
       setLoading(false);
-
-      const document = new JsonDocument("Account", account);
-      setJsonDocument(document);
-      const outline = new JsonOutline(document, ACCOUNT_KNOWN_PARTS);
-      setOutlineItems(outline.items);
-
-      await messenger.send("showJsonOutline", {
-        id: document.id,
-        json: document.jsonString,
-        outlineItems: outline.items,
-      });
     }
   };
 
@@ -82,13 +85,17 @@ function AccountActions({ provider }: AccountActionsProps) {
         <VscodeIcon ref={refreshRef} name="refresh" id="btn-refresh" actionIcon title="Refresh" slot="actions" />
         {loading && <VscodeProgressRing />}
         {!loading && jsonDocument && (
-          <div style={{ marginLeft: "10px" }}>
-            <JsonOutlineTree
-              items={outlineItems}
-              onSelect={(item) => {
-                void handleItemSelect(item);
-              }}
-            />
+          <div>
+            <VscodeDivider />
+            <div style={{ marginLeft: "10px" }}>
+              <JsonOutlineTree
+                items={outlineItems}
+                onSelect={(item) => {
+                  void handleItemSelect(item);
+                }}
+              />
+            </div>
+            <VscodeDivider />
           </div>
         )}
       </VscodeCollapsible>

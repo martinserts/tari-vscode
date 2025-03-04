@@ -8,6 +8,7 @@ import {
   VscodeTabs,
   VscodeTextfield,
 } from "@vscode-elements/react-elements";
+import * as ve from "@vscode-elements/elements";
 import { useTariStore } from "./store/tari-store";
 import {
   TariPermissions,
@@ -109,10 +110,8 @@ function Providers({ configuration }: ProvidersProps) {
               id="walletDaemonAddress"
               value={walletDaemonAddress}
               onInput={(event) => {
-                const target = event.target;
-                if (target && "value" in target && typeof target.value === "string") {
-                  setWalletDaemonAddress(target.value);
-                }
+                const target = event.target as ve.VscodeTextfield;
+                setWalletDaemonAddress(target.value);
               }}
             />
             <VscodeFormHelper>
@@ -128,13 +127,13 @@ function Providers({ configuration }: ProvidersProps) {
               id="walletConnectProjectId"
               value={walletConnectProjectId}
               onInput={(event) => {
-                const target = event.target;
-                if (target && "value" in target && typeof target.value === "string") {
-                  setWalletConnectProjectId(target.value);
-                }
+                const target = event.target as ve.VscodeTextfield;
+                setWalletConnectProjectId(target.value);
               }}
             />
-            <VscodeFormHelper>Empty defaults to Tari project ID. You will need to reconnect, if you switch away from Tari extension.</VscodeFormHelper>
+            <VscodeFormHelper>
+              Empty defaults to Tari project ID. You will need to reconnect, if you switch away from Tari extension.
+            </VscodeFormHelper>
           </VscodeFormGroup>
         </VscodeTabPanel>
       </VscodeTabs>

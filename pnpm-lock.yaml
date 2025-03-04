@@ -99,6 +99,9 @@ importers:
       '@tari-project/tarijs':
         specifier: ^0.4.0
         version: 0.4.0(@types/react@19.0.10)(react@19.0.0)(typescript@5.7.3)(webextension-polyfill@0.12.0)
+      '@tari-project/typescript-bindings':
+        specifier: ^1.5.1
+        version: 1.5.1
       '@tari-project/wallet-connect-provider':
         specifier: ^0.4.0
         version: 0.4.0(@types/react@19.0.10)(react@19.0.0)(typescript@5.7.3)
@@ -799,8 +802,8 @@ packages:
   '@tari-project/tarijs@0.4.0':
     resolution: {integrity: sha512-6jkz99XrBGDEs8e5p1T7Zn1pmSH2KaQWp/489+tDbGrW2MGAuPkOSftgFYxx13GFVhiLCOC2CRbCX+moTfPJww==}
 
-  '@tari-project/typescript-bindings@1.5.0':
-    resolution: {integrity: sha512-bwpUHqbK6Or+MnZ7t4ERfjGOK1TVP1VHRSnmA65j8EeD13UtX9rNkQoBYZdZdEsDSmTruv2ykwF1Fo//BLlCjw==}
+  '@tari-project/typescript-bindings@1.5.1':
+    resolution: {integrity: sha512-WRmkF0aAOaPQt9orouATYBCHqvx7m0zsOfqZi2PzriWWwyLNH0jHKKzFGJbcV1NWr8q87kA7v4e1+rY004HWMg==}
 
   '@tari-project/wallet-connect-provider@0.4.0':
     resolution: {integrity: sha512-vd/k6LFR9XAbKZX94IT55VF3YLMRJyjcclF5vSsWkwJiwc+1R9/vChQZRvhy83k43SeAJSgX67W0UaHdbRXziA==}
@@ -3220,7 +3223,7 @@ snapshots:
       '@metamask/providers': 18.3.1(webextension-polyfill@0.12.0)
       '@tari-project/tari-provider': 0.4.1
       '@tari-project/tarijs-types': 0.4.0
-      '@tari-project/typescript-bindings': 1.5.0
+      '@tari-project/typescript-bindings': 1.5.1
     transitivePeerDependencies:
       - supports-color
       - webextension-polyfill
@@ -3229,14 +3232,14 @@ snapshots:
 
   '@tari-project/tari-provider@0.4.1':
     dependencies:
-      '@tari-project/typescript-bindings': 1.5.0
+      '@tari-project/typescript-bindings': 1.5.1
 
   '@tari-project/tari-universe-provider@0.4.1':
     dependencies:
       '@tari-project/tari-permissions': 0.4.0
       '@tari-project/tari-provider': 0.4.1
       '@tari-project/tarijs-types': 0.4.0
-      '@tari-project/typescript-bindings': 1.5.0
+      '@tari-project/typescript-bindings': 1.5.1
       '@tari-project/wallet_jrpc_client': 1.4.1
 
   '@tari-project/tarijs-builders@0.4.0':
@@ -3244,11 +3247,11 @@ snapshots:
       '@tari-project/tari-provider': 0.4.1
       '@tari-project/tari-universe-provider': 0.4.1
       '@tari-project/tarijs-types': 0.4.0
-      '@tari-project/typescript-bindings': 1.5.0
+      '@tari-project/typescript-bindings': 1.5.1
 
   '@tari-project/tarijs-types@0.4.0':
     dependencies:
-      '@tari-project/typescript-bindings': 1.5.0
+      '@tari-project/typescript-bindings': 1.5.1
 
   '@tari-project/tarijs@0.4.0(@types/react@19.0.10)(react@19.0.0)(typescript@5.7.3)(webextension-polyfill@0.12.0)':
     dependencies:
@@ -3259,7 +3262,7 @@ snapshots:
       '@tari-project/tari-universe-provider': 0.4.1
       '@tari-project/tarijs-builders': 0.4.0
       '@tari-project/tarijs-types': 0.4.0
-      '@tari-project/typescript-bindings': 1.5.0
+      '@tari-project/typescript-bindings': 1.5.1
       '@tari-project/wallet-connect-provider': 0.4.0(@types/react@19.0.10)(react@19.0.0)(typescript@5.7.3)
       '@tari-project/wallet-daemon-provider': 0.4.0
     transitivePeerDependencies:
@@ -3291,13 +3294,13 @@ snapshots:
       - webextension-polyfill
       - zod
 
-  '@tari-project/typescript-bindings@1.5.0': {}
+  '@tari-project/typescript-bindings@1.5.1': {}
 
   '@tari-project/wallet-connect-provider@0.4.0(@types/react@19.0.10)(react@19.0.0)(typescript@5.7.3)':
     dependencies:
       '@tari-project/tari-provider': 0.4.1
       '@tari-project/tarijs-builders': 0.4.0
-      '@tari-project/typescript-bindings': 1.5.0
+      '@tari-project/typescript-bindings': 1.5.1
       '@tari-project/wallet_jrpc_client': 1.4.1
       '@walletconnect/modal': 2.7.0(@types/react@19.0.10)(react@19.0.0)
       '@walletconnect/universal-provider': 2.19.0(typescript@5.7.3)
@@ -3336,7 +3339,7 @@ snapshots:
 
   '@tari-project/wallet_jrpc_client@1.4.1':
     dependencies:
-      '@tari-project/typescript-bindings': 1.5.0
+      '@tari-project/typescript-bindings': 1.5.1
 
   '@types/babel__core@7.20.5':
     dependencies:

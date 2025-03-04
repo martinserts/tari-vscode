@@ -79,7 +79,6 @@ export function activate(context: vscode.ExtensionContext) {
       return Promise.resolve(undefined);
     });
     messenger.registerHandler("showJsonOutline", async ({ id, json, outlineItems, selected }) => {
-      console.log("!!! showJsonOutline", selected);
       const uri = readonlyDocumentProvider.createDocument({ id, json, outlineItems });
       if (uri) {
         const document = await vscode.workspace.openTextDocument(uri);
@@ -95,6 +94,10 @@ export function activate(context: vscode.ExtensionContext) {
           editor.selection = new vscode.Selection(startPos, endPos);
 
           editor.revealRange(new vscode.Range(startPos, endPos), vscode.TextEditorRevealType.InCenter);
+          
+          if (vscode.window.activeTextEditor !== editor) {
+            await vscode.window.showTextDocument(editor.document, { preview: false, viewColumn: editor.viewColumn });
+          }
         }
       }
       return undefined;

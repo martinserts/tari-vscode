@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@tari-project/tarijs": "^0.4.0",
+    "@tari-project/typescript-bindings": "^1.5.1",
     "@tari-project/wallet-connect-provider": "^0.4.0",
     "@tari-project/wallet-daemon-provider": "^0.4.0",
     "@vscode-elements/elements": "^1.13.1",
