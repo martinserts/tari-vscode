@@ -4,7 +4,8 @@ type: "library"
 
 fileGroups:
   configs:
-    - "tsconfig.json"
+    - "tsconfig.csj.json"
+    - "tsconfig.esm.json"
     - "package.json"
   sources:
     - "src/**/*"

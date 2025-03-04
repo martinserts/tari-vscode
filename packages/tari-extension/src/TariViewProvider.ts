@@ -2,12 +2,14 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import { AllowedActions, Messenger } from "tari-extension-common";
 
-export class TariViewProvider<Actions extends AllowedActions> implements vscode.WebviewViewProvider {
+export class TariViewProvider<T extends AllowedActions<keyof T>> implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
+  private messenger?: Messenger<T>;
 
   constructor(
+    private readonly context: vscode.ExtensionContext,
     private readonly extensionUri: vscode.Uri,
-    private setupMessenger: (messenger: Messenger<Actions>) => void,
+    private setupMessenger: (messenger: Messenger<T>) => void,
   ) {}
 
   public async resolveWebviewView(webviewView: vscode.WebviewView): Promise<void> {
@@ -20,13 +22,13 @@ export class TariViewProvider<Actions extends AllowedActions> implements vscode.
     };
     webviewView.webview.html = await this.getHtmlForWebview(webView);
 
-    const messenger = new Messenger<Actions>({
+    this.messenger = new Messenger<T>({
       sendMessage: (msg) => webView.postMessage(msg),
       onMessage: (callback) => {
-        webView.onDidReceiveMessage(callback);
+        this.context.subscriptions.push(webView.onDidReceiveMessage(callback));
       },
     });
-    this.setupMessenger(messenger);
+    this.setupMessenger(this.messenger);
   }
 
   private getHtmlForWebview(webview: vscode.Webview): string {
@@ -34,6 +36,13 @@ export class TariViewProvider<Actions extends AllowedActions> implements vscode.
     const webviewPath = vscode.Uri.joinPath(distPath, "index.html");
     const html = fs.readFileSync(webviewPath.fsPath, "utf8");
     return prepareWebviewHtml(html, webview.cspSource, distPath, webview);
+  }
+
+  public send<K extends keyof T>(command: K, data: T[K]["request"]): Promise<T[K]["response"]> {
+    if (!this.messenger) {
+      throw new Error("Messenger not initialized");
+    }
+    return this.messenger.send(command, data);
   }
 }
 

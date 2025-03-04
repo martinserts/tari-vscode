@@ -4,7 +4,7 @@
   "version": "0.0.2",
   "description": "Tari VS Code extension common code",
   "scripts": {
-    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build:cjs": "tsc -p tsconfig.json",
     "build:esm": "tsc -p tsconfig.esm.json",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint .",

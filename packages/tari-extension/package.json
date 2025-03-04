@@ -31,10 +31,39 @@
     "typescript-eslint": "catalog:"
   },
   "dependencies": {
-    "tari-extension-common": "workspace:^"
+    "tari-extension-common": "workspace:^",
+    "typed-emitter": "^2.1.0"
   },
   "activationEvents": [],
   "contributes": {
+    "configuration": {
+      "title": "Tari Extension",
+      "properties": {
+        "tari.walletDaemonAddress": {
+          "type": "string",
+          "default": null,
+          "description": "Wallet Daemon Address"
+        },
+        "tari.walletConnectProjectId": {
+          "type": "string",
+          "default": null,
+          "description": "Wallet Connect Project ID"
+        },
+        "tari.defaultProvider": {
+          "type": "string",
+          "default": "wallet-daemon",
+          "description": "Default Provider",
+          "enum": [
+            "wallet-daemon",
+            "wallet-connect"
+          ],
+          "enumDescriptions": [
+            "Wallet Daemon",
+            "Wallet Connect"
+          ]
+        }
+      }
+    },
     "commands": [
       {
         "command": "extension.tari",

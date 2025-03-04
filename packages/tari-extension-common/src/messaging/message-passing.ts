@@ -1,25 +1,34 @@
-export type AllowedActions = Record<string, { request: unknown; response: unknown }>;
+interface MessageDefinition<RequestType, ResponseType> {
+  request: RequestType;
+  response: ResponseType;
+}
 
-interface MessageRequest<T extends AllowedActions, K extends keyof T> {
+type ActionName = string | number | symbol;
+
+export type AllowedActions<T extends ActionName> = Record<T, MessageDefinition<unknown, unknown>>;
+
+interface MessageRequest<K extends ActionName, T extends AllowedActions<K>> {
   correlationId: string;
   command: K;
   data: T[K]["request"];
 }
 
-interface MessageResponse<T extends AllowedActions, K extends keyof T> {
+interface MessageResponse<K extends ActionName, T extends AllowedActions<K>> {
   correlationId: string;
   command: K;
   response: T[K]["response"];
 }
 
-export type Message<T extends AllowedActions> = MessageRequest<T, keyof T> | MessageResponse<T, keyof T>;
+export type Message<K extends ActionName, T extends AllowedActions<K>> =
+  | MessageRequest<K, T>
+  | MessageResponse<K, T>;
 
-interface MessengerOptions<T extends AllowedActions> {
-  sendMessage: (msg: Message<T>) => void;
-  onMessage: (callback: (msg: Message<T>) => void) => void;
+interface MessengerOptions<T extends AllowedActions<keyof T>> {
+  sendMessage: (msg: Message<keyof T, T>) => void;
+  onMessage: (callback: (msg: Message<keyof T, T>) => void) => void;
 }
 
-export class Messenger<T extends AllowedActions> {
+export class Messenger<T extends AllowedActions<keyof T>> {
   private pendingRequests = new Map<string, (response: unknown) => void>();
   private handlers = new Map<keyof T, (request: unknown) => Promise<unknown>>();
 
@@ -42,7 +51,7 @@ export class Messenger<T extends AllowedActions> {
     this.handlers.set(command, handler);
   }
 
-  private async handleMessage(msg: Message<T>) {
+  private async handleMessage(msg: Message<keyof T, T>) {
     if ("response" in msg) {
       const resolve = this.pendingRequests.get(msg.correlationId);
       if (resolve) {
@@ -53,7 +62,7 @@ export class Messenger<T extends AllowedActions> {
       const handler = this.handlers.get(msg.command);
       if (!handler) return;
 
-      const response = await handler(msg.data);
+      const response = await handler(msg.data) ?? null;
       this.options.sendMessage({
         correlationId: msg.correlationId,
         command: msg.command,

@@ -8,19 +8,24 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "format": "prettier --check .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run src"
   },
   "dependencies": {
     "@tari-project/tarijs": "^0.4.0",
     "@tari-project/wallet-connect-provider": "^0.4.0",
     "@tari-project/wallet-daemon-provider": "^0.4.0",
+    "@vscode-elements/elements": "^1.13.1",
     "@vscode-elements/react-elements": "^0.9.0",
     "@vscode/codicons": "^0.0.36",
     "flexboxgrid": "^6.3.1",
     "i": "^0.3.7",
+    "jsonc-parser": "^3.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tari-extension-common": "workspace:^"
+    "tari-extension-common": "workspace:^",
+    "uuid": "^11.1.0",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
@@ -37,6 +42,7 @@
     "prettier": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vitest": "catalog:"
   }
 }

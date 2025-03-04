@@ -39,3 +39,8 @@ tasks:
     deps:
       - "format"
       - "build"
+  test:
+    command: "pnpm run test"
+    inputs:
+      - "@files(sources)"
+      - "@files(configs)"
