@@ -1,5 +1,6 @@
 import {
   VscodeButton,
+  VscodeCollapsible,
   VscodeFormGroup,
   VscodeFormHelper,
   VscodeLabel,
@@ -18,6 +19,7 @@ import {
 import { WalletConnectTariProvider } from "@tari-project/wallet-connect-provider";
 import { TariConfiguration, TariProviderType } from "tari-extension-common";
 import { useState } from "react";
+import { useCollapsibleToggle } from "./hooks/collapsible-toggle";
 
 const DEFAULT_WALLET_DAEMON_ADDRESS = "http://127.0.0.1:12010/json_rpc";
 const DEFAULT_TARI_PROJECT_ID = "1825b9dd9c17b5a33063ae91cbc48a6e";
@@ -25,9 +27,11 @@ const PROVIDERS = [TariProviderType.WalletDemon, TariProviderType.WalletConnect]
 
 interface ProvidersProps {
   configuration: TariConfiguration;
+  open?: boolean;
+  onToggle?: (open: boolean) => void;
 }
 
-function Providers({ configuration }: ProvidersProps) {
+function Providers({ configuration, open, onToggle }: ProvidersProps) {
   const messenger = useTariStore((state) => state.messenger);
   const provider = useTariStore((state) => state.provider);
   const setProvider = useTariStore((state) => state.setProvider);
@@ -40,6 +44,8 @@ function Providers({ configuration }: ProvidersProps) {
     configuration.walletConnectProjectId ?? "",
   );
   const [connecting, setConnecting] = useState<boolean>(false);
+
+  const collapsibleRef = useCollapsibleToggle(onToggle ?? (() => undefined));
 
   const handleDisconnect = () => {
     setProvider(undefined);
@@ -96,65 +102,67 @@ function Providers({ configuration }: ProvidersProps) {
 
   return (
     <>
-      <VscodeTabs
-        selectedIndex={selectedProviderIndex}
-        onVscTabsSelect={(event) => {
-          setSelectedProviderIndex(event.detail.selectedIndex);
-        }}
-      >
-        <VscodeTabHeader slot="header">Wallet Daemon</VscodeTabHeader>
-        <VscodeTabPanel>
-          <VscodeFormGroup>
-            <VscodeLabel htmlFor="walletDaemonAddress">JSON RPC address</VscodeLabel>
-            <VscodeTextfield
-              id="walletDaemonAddress"
-              value={walletDaemonAddress}
-              onInput={(event) => {
-                const target = event.target as ve.VscodeTextfield;
-                setWalletDaemonAddress(target.value);
-              }}
-            />
-            <VscodeFormHelper>
-              Empty to defaults to <code>{DEFAULT_WALLET_DAEMON_ADDRESS}</code>
-            </VscodeFormHelper>
-          </VscodeFormGroup>
-        </VscodeTabPanel>
-        <VscodeTabHeader slot="header">WalletConnect</VscodeTabHeader>
-        <VscodeTabPanel>
-          <VscodeFormGroup>
-            <VscodeLabel htmlFor="walletConnectProjectId">Project ID</VscodeLabel>
-            <VscodeTextfield
-              id="walletConnectProjectId"
-              value={walletConnectProjectId}
-              onInput={(event) => {
-                const target = event.target as ve.VscodeTextfield;
-                setWalletConnectProjectId(target.value);
-              }}
-            />
-            <VscodeFormHelper>
-              Empty defaults to Tari project ID. You will need to reconnect, if you switch away from Tari extension.
-            </VscodeFormHelper>
-          </VscodeFormGroup>
-        </VscodeTabPanel>
-      </VscodeTabs>
+      <VscodeCollapsible ref={collapsibleRef} title="Connection" open={open ?? true}>
+        <VscodeTabs
+          selectedIndex={selectedProviderIndex}
+          onVscTabsSelect={(event) => {
+            setSelectedProviderIndex(event.detail.selectedIndex);
+          }}
+        >
+          <VscodeTabHeader slot="header">Wallet Daemon</VscodeTabHeader>
+          <VscodeTabPanel>
+            <VscodeFormGroup>
+              <VscodeLabel htmlFor="walletDaemonAddress">JSON RPC address</VscodeLabel>
+              <VscodeTextfield
+                id="walletDaemonAddress"
+                value={walletDaemonAddress}
+                onInput={(event) => {
+                  const target = event.target as ve.VscodeTextfield;
+                  setWalletDaemonAddress(target.value);
+                }}
+              />
+              <VscodeFormHelper>
+                Empty to defaults to <code>{DEFAULT_WALLET_DAEMON_ADDRESS}</code>
+              </VscodeFormHelper>
+            </VscodeFormGroup>
+          </VscodeTabPanel>
+          <VscodeTabHeader slot="header">WalletConnect</VscodeTabHeader>
+          <VscodeTabPanel>
+            <VscodeFormGroup>
+              <VscodeLabel htmlFor="walletConnectProjectId">Project ID</VscodeLabel>
+              <VscodeTextfield
+                id="walletConnectProjectId"
+                value={walletConnectProjectId}
+                onInput={(event) => {
+                  const target = event.target as ve.VscodeTextfield;
+                  setWalletConnectProjectId(target.value);
+                }}
+              />
+              <VscodeFormHelper>
+                Empty defaults to Tari project ID. You will need to reconnect, if you switch away from Tari extension.
+              </VscodeFormHelper>
+            </VscodeFormGroup>
+          </VscodeTabPanel>
+        </VscodeTabs>
 
-      <VscodeButton
-        icon="vm-connect"
-        disabled={!!provider || connecting}
-        onClick={() => {
-          void handleConnect();
-        }}
-      >
-        Connect
-      </VscodeButton>
-      <VscodeButton
-        icon="debug-disconnect"
-        disabled={!provider}
-        style={{ marginLeft: "8px" }}
-        onClick={handleDisconnect}
-      >
-        Disconnect
-      </VscodeButton>
+        <VscodeButton
+          icon="vm-connect"
+          disabled={!!provider || connecting}
+          onClick={() => {
+            void handleConnect();
+          }}
+        >
+          Connect
+        </VscodeButton>
+        <VscodeButton
+          icon="debug-disconnect"
+          disabled={!provider}
+          style={{ marginLeft: "8px" }}
+          onClick={handleDisconnect}
+        >
+          Disconnect
+        </VscodeButton>
+      </VscodeCollapsible>
     </>
   );
 }

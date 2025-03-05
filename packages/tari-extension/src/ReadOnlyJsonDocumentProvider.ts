@@ -12,13 +12,13 @@ export class ReadOnlyJsonDocumentProvider implements vscode.TextDocumentContentP
   private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
 
   readonly onDidChange: vscode.Event<vscode.Uri> = this._onDidChange.event;
-  
+
   public static getUriById(id: string): vscode.Uri {
     return vscode.Uri.parse(`readonly://authority/${id}.json`);
   }
 
   public createDocument(details: JsonDocumentDetails): vscode.Uri | null {
-    const uri = ReadOnlyJsonDocumentProvider.getUriById(details.id)
+    const uri = ReadOnlyJsonDocumentProvider.getUriById(details.id);
     if (this.documents.has(uri.path)) {
       return null;
     }
@@ -34,7 +34,7 @@ export class ReadOnlyJsonDocumentProvider implements vscode.TextDocumentContentP
   public deleteDocument(uri: vscode.Uri) {
     this.documents.delete(uri.path);
   }
-  
+
   public updateDecorations(editor: vscode.TextEditor) {
     const details = this.documents.get(editor.document.uri.path);
     if (!details) {
@@ -53,7 +53,12 @@ export class ReadOnlyJsonDocumentProvider implements vscode.TextDocumentContentP
 
       const range = new vscode.Range(startPos, endPos);
 
-      const decoration = { range: range };
+      let hoverMessage: vscode.MarkdownString | undefined = undefined;
+      if (item.hoverMessage) {
+        hoverMessage = new vscode.MarkdownString();
+        hoverMessage.appendCodeblock(item.hoverMessage.text, item.hoverMessage.language);
+      }
+      const decoration: vscode.DecorationOptions = { range: range, hoverMessage };
 
       editor.setDecorations(decorationType, [decoration]);
     }

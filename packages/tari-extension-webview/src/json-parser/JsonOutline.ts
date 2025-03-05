@@ -5,7 +5,7 @@ import { JsonOutlineItem, JsonOutlineItemBase } from "tari-extension-common";
 
 export interface KnownJsonPart {
   path: JSONPath;
-  getOutlineItem: (node: Node) => JsonOutlineItemBase | undefined;
+  getOutlineItem: (node: Node, json: string) => JsonOutlineItemBase | undefined;
 }
 
 export class JsonOutline {
@@ -32,12 +32,15 @@ export class JsonOutline {
           if (pathMatches(part.path, currentPath)) {
             const node = findNodeAtOffset(tree, offset);
             if (node) {
-              const outlineItem = part.getOutlineItem(node);
+              const outlineItem = part.getOutlineItem(node, this.document.jsonString);
               if (outlineItem) {
                 this.items.push({
                   title: outlineItem.title,
                   details: outlineItem.details,
                   icon: outlineItem.icon,
+                  actions: outlineItem.actions,
+                  value: outlineItem.value,
+                  hoverMessage: outlineItem.hoverMessage,
                   offset,
                   length,
                 });

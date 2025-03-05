@@ -12,9 +12,11 @@ import { JsonOutlineItem } from "tari-extension-common";
 
 interface AccountActionsProps {
   provider: TariProvider;
+  open?: boolean;
+  onToggle?: (open: boolean) => void;
 }
 
-function AccountActions({ provider }: AccountActionsProps) {
+function AccountActions({ provider, open, onToggle }: AccountActionsProps) {
   const refreshRef = useRef<ve.VscodeIcon | null>(null);
   const messenger = useTariStore((state) => state.messenger);
   const [jsonDocument, setJsonDocument] = useState<JsonDocument | undefined>(undefined);
@@ -76,12 +78,15 @@ function AccountActions({ provider }: AccountActionsProps) {
   };
 
   const collapsibleRef = useCollapsibleToggle((open) => {
+    if (onToggle) {
+      onToggle(open);
+    }
     void handleAccountToggled(open);
   });
 
   return (
     <>
-      <VscodeCollapsible ref={collapsibleRef} title="Account">
+      <VscodeCollapsible ref={collapsibleRef} open={open ?? false} title="Account">
         <VscodeIcon ref={refreshRef} name="refresh" id="btn-refresh" actionIcon title="Refresh" slot="actions" />
         {loading && <VscodeProgressRing />}
         {!loading && jsonDocument && (

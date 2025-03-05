@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as ve from "@vscode-elements/elements";
+import { VscCollapsibleToggleEvent } from "@vscode-elements/elements/dist/vscode-collapsible/vscode-collapsible";
+
 
 export function useCollapsibleToggle(onToggle: (open: boolean) => void) {
   const collapsibleRef = useRef<ve.VscodeCollapsible | null>(null);
@@ -8,7 +10,7 @@ export function useCollapsibleToggle(onToggle: (open: boolean) => void) {
     if (!collapsibleRef.current) return;
     const collapsibleElement = collapsibleRef.current as HTMLElement;
 
-    function handleToggle(event: { detail: { open: boolean } }) {
+    function handleToggle(event: VscCollapsibleToggleEvent) {
       onToggle(event.detail.open);
     }
 

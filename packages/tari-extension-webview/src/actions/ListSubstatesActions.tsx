@@ -22,15 +22,19 @@ import JsonOutlineTree from "../components/JsonOutlineTree";
 import { JsonOutline } from "../json-parser/JsonOutline";
 import { SUBSTATE_LIST_PARTS } from "../json-parser/known-parts/substate-list";
 import { SubstateType } from "@tari-project/typescript-bindings";
+import { useCollapsibleToggle } from "../hooks/collapsible-toggle";
 
 const DEFAULT_LIMIT = 15;
 const DEFAULT_OFFSET = 0;
 
 interface ListSubstatesActionsProps {
   provider: TariProvider;
+  onViewDetails: (item: JsonOutlineItem) => void;
+  open?: boolean;
+  onToggle?: (open: boolean) => void;
 }
 
-function ListSubstatesActions({ provider }: ListSubstatesActionsProps) {
+function ListSubstatesActions({ provider, onViewDetails, open, onToggle }: ListSubstatesActionsProps) {
   const messenger = useTariStore((state) => state.messenger);
   const [jsonDocument, setJsonDocument] = useState<JsonDocument | undefined>(undefined);
   const [outlineItems, setOutlineItems] = useState<JsonOutlineItem[]>([]);
@@ -39,6 +43,8 @@ function ListSubstatesActions({ provider }: ListSubstatesActionsProps) {
   const [tempateAddress, setTemplateAddress] = useState<string | null>(null);
   const [limit, setLimit] = useState(DEFAULT_LIMIT);
   const [offset, setOffset] = useState(DEFAULT_OFFSET);
+
+  const collapsibleRef = useCollapsibleToggle(onToggle ?? (() => undefined));
 
   const handleItemSelect = async (item: JsonOutlineItem) => {
     if (messenger && jsonDocument) {
@@ -75,7 +81,7 @@ function ListSubstatesActions({ provider }: ListSubstatesActionsProps) {
 
   return (
     <>
-      <VscodeCollapsible title="List Substates" className="list-substates">
+      <VscodeCollapsible ref={collapsibleRef} open={open ?? false} title="List Substates" className="list-substates">
         <VscodeFormContainer>
           <VscodeFormGroup>
             <VscodeLabel htmlFor="substateType">Substate Type</VscodeLabel>
@@ -174,6 +180,9 @@ function ListSubstatesActions({ provider }: ListSubstatesActionsProps) {
                   items={outlineItems}
                   onSelect={(item) => {
                     void handleItemSelect(item);
+                  }}
+                  onAction={(_actionId, item) => {
+                    onViewDetails(item);
                   }}
                 />
               </VscodeScrollable>
