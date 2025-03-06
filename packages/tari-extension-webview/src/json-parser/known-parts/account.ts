@@ -31,6 +31,16 @@ const accountPublicKeyKnownPart: KnownJsonPart = {
   },
 };
 
+const resourcesKnownPart: KnownJsonPart = {
+  path: ["resources"],
+  getOutlineItem: () => {
+    return {
+      title: "Resources",
+      icon: "book",
+    };
+  },
+};
+
 const accountResourceKnownPart: KnownJsonPart = {
   path: ["resources", "*", "type"],
   getOutlineItem: (node) => {
@@ -51,5 +61,6 @@ export const ACCOUNT_KNOWN_PARTS = [
   accountIdKnownPart,
   accountAddressKnownPart,
   accountPublicKeyKnownPart,
+  resourcesKnownPart,
   accountResourceKnownPart,
 ];

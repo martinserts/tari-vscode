@@ -18,7 +18,11 @@ export interface JsonOutlineItemBase {
   actions?: TreeItemAction[];
 }
 
+export type Segment = string | number;
+export type JSONPath = Segment[];
+
 export interface JsonOutlineItem extends JsonOutlineItemBase {
+  path: JSONPath;
   offset: number;
   length: number;
 }

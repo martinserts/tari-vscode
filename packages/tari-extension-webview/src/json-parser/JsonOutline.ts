@@ -41,6 +41,7 @@ export class JsonOutline {
                   actions: outlineItem.actions,
                   value: outlineItem.value,
                   hoverMessage: outlineItem.hoverMessage,
+                  path: currentPath,
                   offset,
                   length,
                 });
