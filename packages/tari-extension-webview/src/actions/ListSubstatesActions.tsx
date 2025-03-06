@@ -9,7 +9,6 @@ import {
   VscodeOption,
   VscodeButton,
   VscodeProgressRing,
-  VscodeScrollable,
   VscodeDivider,
 } from "@vscode-elements/react-elements";
 import * as ve from "@vscode-elements/elements";
@@ -175,17 +174,15 @@ function ListSubstatesActions({ provider, onViewDetails, open, onToggle }: ListS
         {!loading && jsonDocument && (
           <div>
             <div style={{ marginLeft: "10px" }}>
-              <VscodeScrollable style={{ maxHeight: "300px" }}>
-                <JsonOutlineTree
-                  items={outlineItems}
-                  onSelect={(item) => {
-                    void handleItemSelect(item);
-                  }}
-                  onAction={(_actionId, item) => {
-                    onViewDetails(item);
-                  }}
-                />
-              </VscodeScrollable>
+              <JsonOutlineTree
+                items={outlineItems}
+                onSelect={(item) => {
+                  void handleItemSelect(item);
+                }}
+                onAction={(_actionId, item) => {
+                  onViewDetails(item);
+                }}
+              />
             </div>
             <VscodeDivider />
           </div>

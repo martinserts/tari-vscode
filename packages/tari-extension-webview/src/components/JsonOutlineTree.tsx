@@ -45,7 +45,7 @@ function JsonOutlineTree({ items, onSelect, onAction }: JsonOutlineProps) {
       icons,
       value: item.index.toString(),
       actions: item.actions,
-      open: true,
+      open: item.open,
     };
   });
 

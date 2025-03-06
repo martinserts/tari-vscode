@@ -38,6 +38,7 @@ export class JsonOutline {
                   title: outlineItem.title,
                   details: outlineItem.details,
                   icon: outlineItem.icon,
+                  open: outlineItem.open,
                   actions: outlineItem.actions,
                   value: outlineItem.value,
                   hoverMessage: outlineItem.hoverMessage,

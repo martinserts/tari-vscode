@@ -18,6 +18,7 @@ const substateRoot: KnownJsonPart = {
     return {
       title,
       icon,
+      open: true,
     };
   },
 };

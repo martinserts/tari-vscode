@@ -1,8 +1,7 @@
 import { TariProvider } from "@tari-project/tarijs";
+import { useCollapsibleToggle } from "../hooks/collapsible-toggle";
+import { useCallback, useState } from "react";
 import { useTariStore } from "../store/tari-store";
-import { useCallback, useEffect, useState } from "react";
-import { JsonOutlineItem } from "tari-extension-common";
-import { JsonDocument } from "../json-parser/JsonDocument";
 import {
   VscodeButton,
   VscodeCollapsible,
@@ -15,28 +14,23 @@ import {
 } from "@vscode-elements/react-elements";
 import * as ve from "@vscode-elements/elements";
 import JsonOutlineTree from "../components/JsonOutlineTree";
+import { JsonOutlineItem } from "tari-extension-common";
+import { JsonDocument } from "../json-parser/JsonDocument";
 import { JsonOutline } from "../json-parser/JsonOutline";
-import { SUBSTATE_DETAILS_PARTS } from "../json-parser/known-parts/substate-details";
-import { useCollapsibleToggle } from "../hooks/collapsible-toggle";
+import { TEMPLATE_DETAILS_PARTS } from "../json-parser/known-parts/template-details";
 
-interface SubstateDetailsActionsProps {
+interface TemplateActionsProps {
   provider: TariProvider;
-  substateId?: string;
   open?: boolean;
   onToggle?: (open: boolean) => void;
 }
 
-function SubstateDetailsActions({
-  provider,
-  substateId: externalSubstateId,
-  open,
-  onToggle,
-}: SubstateDetailsActionsProps) {
+function TemplateActions({ provider, open, onToggle }: TemplateActionsProps) {
   const messenger = useTariStore((state) => state.messenger);
   const [jsonDocument, setJsonDocument] = useState<JsonDocument | undefined>(undefined);
   const [outlineItems, setOutlineItems] = useState<JsonOutlineItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [substateId, setSubstateId] = useState<string | null>(externalSubstateId ?? null);
+  const [templateAddress, setTemplateAddress] = useState<string | null>(null);
 
   const collapsibleRef = useCollapsibleToggle(onToggle ?? (() => undefined));
 
@@ -51,15 +45,15 @@ function SubstateDetailsActions({
     }
   };
 
-  const fetchSubstateDetails = useCallback(
-    async (substateIdToFetch: string) => {
+  const fetchTemplateDetails = useCallback(
+    async (templateAddressToFetch: string) => {
       if (messenger) {
         setLoading(true);
         try {
-          const details = await provider.getSubstate(substateIdToFetch);
-          const document = new JsonDocument("Substate details", details);
+          const details = await provider.getTemplateDefinition(templateAddressToFetch);
+          const document = new JsonDocument("Template definition", details);
           setJsonDocument(document);
-          const outline = new JsonOutline(document, SUBSTATE_DETAILS_PARTS);
+          const outline = new JsonOutline(document, TEMPLATE_DETAILS_PARTS);
           setOutlineItems(outline.items);
 
           await messenger.send("showJsonOutline", {
@@ -68,7 +62,7 @@ function SubstateDetailsActions({
             outlineItems: outline.items,
           });
         } catch (error: unknown) {
-          await messenger.send("showError", { message: "Failed to fetch substate details", detail: String(error) });
+          await messenger.send("showError", { message: "Failed to fetch template definition", detail: String(error) });
         }
         setLoading(false);
       }
@@ -76,33 +70,25 @@ function SubstateDetailsActions({
     [messenger, provider],
   );
 
-  useEffect(() => {
-    if (externalSubstateId !== undefined) {
-      setSubstateId(externalSubstateId);
-      void fetchSubstateDetails(externalSubstateId);
-    }
-  }, [externalSubstateId, fetchSubstateDetails]);
-
   return (
     <>
-      <VscodeCollapsible ref={collapsibleRef} open={open ?? false} title="Substate Details">
+      <VscodeCollapsible ref={collapsibleRef} open={open ?? false} title="Template Details">
         <VscodeFormContainer>
           <VscodeFormGroup>
-            <VscodeLabel htmlFor="substateId">Substate ID</VscodeLabel>
+            <VscodeLabel htmlFor="templateAddress">Template Address</VscodeLabel>
             <VscodeTextfield
-              id="substateId"
-              value={substateId ?? ""}
+              id="templateAddress"
               onInput={(event) => {
                 const target = event.target as ve.VscodeTextfield;
-                setSubstateId(target.value || null);
+                setTemplateAddress(target.value || null);
               }}
             />
           </VscodeFormGroup>
           <VscodeButton
             icon="code-oss"
             onClick={() => {
-              if (substateId) {
-                void fetchSubstateDetails(substateId);
+              if (templateAddress) {
+                void fetchTemplateDetails(templateAddress);
               }
             }}
           >
@@ -130,4 +116,4 @@ function SubstateDetailsActions({
   );
 }
 
-export default SubstateDetailsActions;
+export default TemplateActions;

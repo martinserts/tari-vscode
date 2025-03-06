@@ -16,6 +16,7 @@ export interface JsonOutlineItemBase {
   value?: unknown;
   hoverMessage?: Markdown;
   actions?: TreeItemAction[];
+  open?: boolean;
 }
 
 export type Segment = string | number;

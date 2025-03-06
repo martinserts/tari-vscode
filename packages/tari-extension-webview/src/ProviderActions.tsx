@@ -4,6 +4,7 @@ import AccountActions from "./actions/AccountActions";
 import ListSubstatesActions from "./actions/ListSubstatesActions";
 import SubstateDetailsActions from "./actions/SubstateDetailsActions";
 import { useState } from "react";
+import TemplateActions from "./actions/TemplateActions";
 
 interface ProviderActionsProps {
   provider: TariProvider;
@@ -14,6 +15,7 @@ function ProviderActions({ provider }: ProviderActionsProps) {
   const [accountsActionsOpen, setAccountsActionsOpen] = useState(false);
   const [listSubstatesActionsOpen, setListSubstatesActionsOpen] = useState(false);
   const [substateDetailsActionsOpen, setSubstateDetailsActionsOpen] = useState(false);
+  const [templateActionsOpen, setTemplateActionsOpen] = useState(false);
 
   return (
     <>
@@ -38,6 +40,7 @@ function ProviderActions({ provider }: ProviderActionsProps) {
         open={substateDetailsActionsOpen}
         onToggle={setSubstateDetailsActionsOpen}
       />
+      <TemplateActions provider={provider} open={templateActionsOpen} onToggle={setTemplateActionsOpen} />
     </>
   );
 }

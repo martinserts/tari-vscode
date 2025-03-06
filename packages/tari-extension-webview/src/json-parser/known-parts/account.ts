@@ -37,6 +37,7 @@ const resourcesKnownPart: KnownJsonPart = {
     return {
       title: "Resources",
       icon: "book",
+      open: true,
     };
   },
 };
