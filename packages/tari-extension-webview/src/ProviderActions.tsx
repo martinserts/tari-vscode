@@ -28,6 +28,7 @@ function ProviderActions({ provider }: ProviderActionsProps) {
             setSubstateId(item.value as string);
             setAccountsActionsOpen(false);
             setListSubstatesActionsOpen(false);
+            setTemplateActionsOpen(false);
             setSubstateDetailsActionsOpen(true);
           }
         }}

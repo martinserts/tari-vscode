@@ -10,9 +10,10 @@ fileGroups:
     - "tsconfig.app.json"
     - "tsconfig.json"
     - "tsconfig.node.json"
+    - "vite.config.ts"
+    - "components.json"
   sources:
     - "index.html"
-    - "vite.config.ts"
     - "src/**/*"
 
 tasks:
@@ -35,8 +36,8 @@ tasks:
     inputs:
       - "@files(sources)"
       - "@files(configs)"
-  test:
-    command: "pnpm run test"
+  ladle:
+    command: "pnpm run ladle"
     inputs:
       - "@files(sources)"
       - "@files(configs)"
