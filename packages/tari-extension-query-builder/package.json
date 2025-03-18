@@ -5,12 +5,30 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc --build tsconfig.lib.json && BUILD_LIB=true vite build",
     "lint": "eslint .",
     "format": "prettier --check .",
+    "format:fix": "prettier --write .",
     "preview": "vite preview",
     "ladle": "ladle serve"
   },
+  "main": "dist/tari-extension-query-builder.umd.js",
+  "module": "dist/tari-extension-query-builder.es.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/tari-extension-query-builder.es.js",
+      "require": "./dist/tari-extension-query-builder.umd.js"
+    },
+    "./style": {
+      "style": "./dist/tari-extension-query-builder.css"
+    },
+    "./dist/tari-extension-query-builder.css": "./dist/tari-extension-query-builder.css"
+  },
+  "sideEffects": [
+    "./dist/tari-extension-query-builder.css"
+  ],
   "dependencies": {
     "@ladle/react": "^5.0.1",
     "@radix-ui/react-checkbox": "^1.1.4",
@@ -50,6 +68,7 @@
     "prettier": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vite-plugin-dts": "^4.5.3"
   }
 }

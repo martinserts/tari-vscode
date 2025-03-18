@@ -1,5 +1,12 @@
 import { FunctionDef } from "@tari-project/typescript-bindings";
-import { type Edge, type Node, type OnNodesChange, type OnEdgesChange, type OnConnect, IsValidConnection } from "@xyflow/react";
+import {
+  type Edge,
+  type Node,
+  type OnNodesChange,
+  type OnEdgesChange,
+  type OnConnect,
+  IsValidConnection,
+} from "@xyflow/react";
 import { SafeParseReturnType } from "zod";
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
@@ -12,12 +19,15 @@ export type CallNodeData = {
   values?: Record<string, SafeParseReturnType<unknown, unknown>>;
 };
 
-export type CallNode = Node<CallNodeData, 'callNode'>;
+export type CallNode = Node<CallNodeData, "callNode">;
 
 export interface QueryBuilderState {
+  readOnly: boolean;
   nodes: CallNode[];
   edges: Edge[];
   lastY: number;
+  changeCounter: number;
+  setReadOnly: (value: boolean) => void;
   onNodesChange: OnNodesChange<CallNode>;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -33,4 +43,8 @@ export interface QueryBuilderState {
   getNodeDataById: (nodeId: string) => CallNodeData | undefined;
   isValidConnection: IsValidConnection;
   removeNode: (nodeId: string) => void;
+  saveStateToString: () => string;
+  loadStateFromString: (state: string) => void;
 }
+
+export type PersistedState = Pick<QueryBuilderState, "nodes" | "edges">;

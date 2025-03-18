@@ -2,7 +2,7 @@ export enum TariProviderType {
   WalletDemon = "wallet-daemon",
   WalletConnect = "wallet-connect",
 }
-  
+
 export enum TariConfigurationKey {
   WalletDaemonAddress = "walletDaemonAddress",
   WalletConnectProjectId = "walletConnectProjectId",

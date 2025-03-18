@@ -25,6 +25,7 @@ function CallNode({ id, data }: NodeProps<CallNode>) {
   const getComponentAddress = useStore((store) => store.getNodeDataById(id)?.componentAddress);
   const updateNodeComponentAddress = useStore((store) => store.updateNodeComponentAddress);
   const removeNode = useStore((store) => store.removeNode);
+  const readOnly = useStore((store) => store.readOnly);
 
   const getNodeValue = useCallback(
     (name: string) => {
@@ -64,17 +65,6 @@ function CallNode({ id, data }: NodeProps<CallNode>) {
         );
       })}
       {
-        /*
-        <div className="absolute top-3 left-2">
-          {
-            isMethod && (<CodeIcon />)
-          }
-          {
-            !isMethod && (<CubeIcon />)
-          }
-          <Badge>{templateName}</Badge>
-        </div>
-        */
         <div className="absolute top-3 left-2 flex items-center">
           {isMethod && <CubeIcon className="h-5 w-5 mr-1" />}
           {!isMethod && <HomeIcon className="h-5 w-5 mr-1" />}
@@ -96,6 +86,7 @@ function CallNode({ id, data }: NodeProps<CallNode>) {
       {isMethod && (
         <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-md mb-2 w-full">
           <CallInputText
+            readOnly={readOnly}
             name=""
             placeHolder="Component Address"
             type={componentAddressType.prompt}
@@ -115,6 +106,7 @@ function CallNode({ id, data }: NodeProps<CallNode>) {
             case InputControlType.TextBoxInput: {
               return (
                 <CallInputText
+                  readOnly={readOnly}
                   key={arg.name}
                   name={arg.name}
                   placeHolder={type.prompt}

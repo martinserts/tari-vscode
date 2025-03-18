@@ -19,9 +19,7 @@ interface MessageResponse<K extends ActionName, T extends AllowedActions<K>> {
   response: T[K]["response"];
 }
 
-export type Message<K extends ActionName, T extends AllowedActions<K>> =
-  | MessageRequest<K, T>
-  | MessageResponse<K, T>;
+export type Message<K extends ActionName, T extends AllowedActions<K>> = MessageRequest<K, T> | MessageResponse<K, T>;
 
 interface MessengerOptions<T extends AllowedActions<keyof T>> {
   sendMessage: (msg: Message<keyof T, T>) => void;
@@ -62,7 +60,7 @@ export class Messenger<T extends AllowedActions<keyof T>> {
       const handler = this.handlers.get(msg.command);
       if (!handler) return;
 
-      const response = await handler(msg.data) ?? null;
+      const response = (await handler(msg.data)) ?? null;
       this.options.sendMessage({
         correlationId: msg.correlationId,
         command: msg.command,

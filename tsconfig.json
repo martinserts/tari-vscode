@@ -25,6 +25,9 @@
     },
     {
       "path": "packages/tari-extension-query-builder"
+    },
+    {
+      "path": "packages/tari-extension-query-builder-webview"
     }
   ]
 }

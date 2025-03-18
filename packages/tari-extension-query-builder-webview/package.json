@@ -1,5 +1,5 @@
 {
-  "name": "tari-extension-webview",
+  "name": "tari-extension-query-builder-webview",
   "private": true,
   "version": "0.0.1",
   "type": "module",
@@ -8,31 +8,25 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "format": "prettier --check .",
+    "format:fix": "prettier --write .",
     "preview": "vite preview",
-    "test": "vitest run src"
+    "ladle": "ladle serve"
   },
   "dependencies": {
-    "@tari-project/tarijs": "catalog:",
     "@tari-project/typescript-bindings": "catalog:",
-    "@tari-project/wallet-connect-provider": "catalog:",
-    "@tari-project/wallet-daemon-provider": "catalog:",
-    "@vscode-elements/elements": "^1.13.1",
-    "@vscode-elements/react-elements": "^0.9.0",
-    "@vscode/codicons": "^0.0.36",
-    "jsonc-parser": "^3.3.1",
     "react": "catalog:",
     "react-dom": "catalog:",
     "tari-extension-common": "workspace:^",
-    "uuid": "catalog:",
-    "zustand": "catalog:"
+    "tari-extension-query-builder": "workspace:^",
+    "use-debounce": "^10.0.4"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@types/vscode-webview": "catalog:",
     "@vitejs/plugin-react": "catalog:",
-    "@vscode-elements/webview-playground": "^1.6.0",
     "eslint": "catalog:",
     "eslint-plugin-react": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",
@@ -41,7 +35,6 @@
     "prettier": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
-    "vite": "catalog:",
-    "vitest": "catalog:"
+    "vite": "catalog:"
   }
 }

@@ -62,3 +62,38 @@ export interface WebViewMessages {
     response: undefined;
   };
 }
+
+export type Theme = "dark" | "light";
+
+export interface TariFlowMessages {
+  /** Tari Flow -> Extension */
+  ready: {
+    request: undefined;
+    response: undefined;
+  };
+
+  documentChanged: {
+    request: undefined;
+    response: undefined;
+  };
+
+  /** Extension -> Tari Flow */
+  init: {
+    request: {
+      theme: Theme;
+      data: string;
+      editable: boolean;
+    };
+    response: undefined;
+  };
+
+  setTheme: {
+    request: Theme;
+    response: undefined;
+  };
+
+  getData: {
+    request: undefined;
+    response: string;
+  };
+}

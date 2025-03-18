@@ -13,7 +13,9 @@ tasks:
   build:
     command: "pnpm run build && \
               mkdir -p dist/webview && \ 
-              cp -R ../tari-extension-webview/dist/* dist/webview"
+              cp -R ../tari-extension-webview/dist/* dist/webview && \
+              mkdir -p dist/query-builder-webview && \
+              cp -R ../tari-extension-query-builder-webview/dist/* dist/query-builder-webview"
     inputs:
       - "@files(sources)"
       - "@files(configs)"
@@ -22,6 +24,7 @@ tasks:
     deps:
       - "tari-extension-common:build"
       - "tari-extension-webview:build"
+      - "tari-extension-query-builder-webview:build"
   watch:
     command: "pnpm run watch"
     inputs:

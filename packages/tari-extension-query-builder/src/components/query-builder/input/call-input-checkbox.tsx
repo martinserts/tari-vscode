@@ -22,9 +22,12 @@ function CallInputCheckbox({ name, labelWidth, value, onChange }: CallInputCheck
 
   return (
     <CallInput name={name} labelWidth={labelWidth}>
-      <Checkbox name={name}
-      className="nodrag flex justify-start border border-gray-400 dark:border-gray-700"
-       checked={checked} onCheckedChange={handleChange} />
+      <Checkbox
+        name={name}
+        className="nodrag flex justify-start border border-gray-400 dark:border-gray-700"
+        checked={checked}
+        onCheckedChange={handleChange}
+      />
     </CallInput>
   );
 }

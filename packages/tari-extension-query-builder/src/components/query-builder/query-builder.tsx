@@ -4,8 +4,9 @@ import { useShallow } from "zustand/shallow";
 import { QueryBuilderState } from "@/store/types";
 import { useEffect } from "react";
 import CallNode from "./nodes/call-node";
-import ButtonEdge from "./edges/button-edge"
+import ButtonEdge from "./edges/button-edge";
 
+import "../../index.css";
 import "@xyflow/react/dist/style.css";
 import "@/xy-theme.css";
 
@@ -14,6 +15,7 @@ export type Theme = "dark" | "light";
 const selector = (state: QueryBuilderState) => ({
   nodes: state.nodes,
   edges: state.edges,
+  setReadOnly: state.setReadOnly,
   onNodesChange: state.onNodesChange,
   onEdgesChange: state.onEdgesChange,
   onConnect: state.onConnect,
@@ -23,6 +25,7 @@ const selector = (state: QueryBuilderState) => ({
 
 export interface QueryBuilderProps {
   theme: Theme;
+  readOnly?: boolean;
 }
 
 const nodeTypes = {
@@ -33,8 +36,10 @@ const edgeTypes = {
   buttonEdge: ButtonEdge,
 };
 
-function QueryBuilder({ theme }: QueryBuilderProps) {
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, isValidConnection } = useStore(useShallow(selector));
+function QueryBuilder({ theme, readOnly = false }: QueryBuilderProps) {
+  const { nodes, edges, setReadOnly, onNodesChange, onEdgesChange, onConnect, isValidConnection } = useStore(
+    useShallow(selector),
+  );
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -42,8 +47,17 @@ function QueryBuilder({ theme }: QueryBuilderProps) {
     root.classList.add(theme);
   }, [theme]);
 
+  useEffect(() => {
+    setReadOnly(readOnly);
+  }, [setReadOnly, readOnly]);
+
   return (
     <ReactFlow
+      nodesConnectable={!readOnly}
+      nodesDraggable={!readOnly}
+      nodesFocusable={!readOnly}
+      edgesFocusable={!readOnly}
+      edgesReconnectable={!readOnly}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       nodes={nodes}

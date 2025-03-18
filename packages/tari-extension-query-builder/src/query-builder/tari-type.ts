@@ -37,7 +37,7 @@ export class TariType {
   public validate(data: string): SafeParseReturnType<unknown, unknown> {
     return this.props.validator.safeParse(data);
   }
-  
+
   public isVoid(): boolean {
     return this.type === "Unit";
   }

@@ -1,4 +1,3 @@
-import "flexboxgrid/css/flexboxgrid.min.css";
 import { useEffect, useState } from "react";
 import { useTariStore } from "./store/tari-store";
 import Providers from "./Providers";

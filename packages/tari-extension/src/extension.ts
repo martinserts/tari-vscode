@@ -1,9 +1,10 @@
 import * as vscode from "vscode";
-import { TariViewProvider } from "./TariViewProvider";
+import { TariViewProvider } from "./main-view/TariViewProvider";
 import { TariConfigurationKey, TariProviderType, WebViewMessages } from "tari-extension-common";
 import { TariConfiguration } from "tari-extension-common";
 import { LongOperation } from "./LongOperation";
 import { ReadOnlyJsonDocumentProvider } from "./ReadOnlyJsonDocumentProvider";
+import { TariFlowEditorProvider } from "./flow-view/TariFlowEditor";
 
 const CONFIGURATION_ROOT = "tari";
 
@@ -94,7 +95,7 @@ export function activate(context: vscode.ExtensionContext) {
           editor.selection = new vscode.Selection(startPos, endPos);
 
           editor.revealRange(new vscode.Range(startPos, endPos), vscode.TextEditorRevealType.InCenter);
-          
+
           if (vscode.window.activeTextEditor !== editor) {
             await vscode.window.showTextDocument(editor.document, { preview: false, viewColumn: editor.viewColumn });
           }
@@ -111,6 +112,15 @@ export function activate(context: vscode.ExtensionContext) {
       if (e.affectsConfiguration(CONFIGURATION_ROOT)) {
         tariViewProvider.send("configurationChanged", fetchConfiguration()).catch(console.error);
       }
+    }),
+  );
+
+  // Tari Flow Editor
+  const tariFlowEditorProvider = new TariFlowEditorProvider(context);
+  context.subscriptions.push(tariFlowEditorProvider.register());
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveColorTheme((colorTheme) => {
+      void tariFlowEditorProvider.updateColorScheme(colorTheme);
     }),
   );
 }

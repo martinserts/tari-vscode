@@ -68,6 +68,11 @@
       {
         "command": "extension.tari",
         "title": "Tari Extension"
+      },
+      {
+        "command": "tari.flow-document.new",
+        "title": "Create new Tari Flow",
+        "category": "Tari Flow"
       }
     ],
     "viewsContainers": {
@@ -87,7 +92,18 @@
           "name": "Tari"
         }
       ]
-    }
+    },
+    "customEditors": [
+      {
+        "viewType": "tari.flow-document",
+        "displayName": "Tari Flow",
+        "selector": [
+          {
+            "filenamePattern": "*.tari"
+          }
+        ]
+      }
+    ]
   },
   "engines": {
     "vscode": "^1.74.0"

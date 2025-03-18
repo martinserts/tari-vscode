@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@radix
 import { cn } from "@/lib/utils";
 
 interface CallInputTextProps extends Omit<CallInputProps, "children"> {
+  readOnly?: boolean;
   type?: HTMLInputTypeAttribute;
   placeHolder?: string;
   min?: string;
@@ -16,6 +17,7 @@ interface CallInputTextProps extends Omit<CallInputProps, "children"> {
 }
 
 function CallInputText({
+  readOnly = false,
   name,
   labelWidth,
   placeHolder,
@@ -48,6 +50,7 @@ function CallInputText({
         <Tooltip open={!!errorMessage}>
           <TooltipTrigger asChild>
             <Input
+              readOnly={readOnly}
               name={name}
               type={type}
               autoComplete="off"
