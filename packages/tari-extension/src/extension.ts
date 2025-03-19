@@ -32,6 +32,15 @@ export function activate(context: vscode.ExtensionContext) {
     }),
   );
 
+  // Tari Flow Editor
+  const tariFlowEditorProvider = new TariFlowEditorProvider(context);
+  context.subscriptions.push(tariFlowEditorProvider.register());
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveColorTheme((colorTheme) => {
+      tariFlowEditorProvider.updateColorScheme(colorTheme).catch(console.error);
+    }),
+  );
+
   const tariViewProvider = new TariViewProvider<WebViewMessages>(context, context.extensionUri, (messenger) => {
     messenger.registerHandler("showError", ({ message, detail }) => {
       const modal = !!detail;
@@ -103,10 +112,17 @@ export function activate(context: vscode.ExtensionContext) {
       }
       return undefined;
     });
+    messenger.registerHandler("newTariFlow", async () => {
+      await vscode.commands.executeCommand("tari.flow-document.new");
+      return undefined;
+    });
+    messenger.registerHandler("addTariFlowNode", (details) => {
+      tariFlowEditorProvider.addNode(details);
+      return Promise.resolve(undefined);
+    });
   });
   context.subscriptions.push(vscode.window.registerWebviewViewProvider("tariActivityBarView", tariViewProvider));
 
-  // Notify the webview of any configuration changes
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration(CONFIGURATION_ROOT)) {
@@ -115,14 +131,6 @@ export function activate(context: vscode.ExtensionContext) {
     }),
   );
 
-  // Tari Flow Editor
-  const tariFlowEditorProvider = new TariFlowEditorProvider(context);
-  context.subscriptions.push(tariFlowEditorProvider.register());
-  context.subscriptions.push(
-    vscode.window.onDidChangeActiveColorTheme((colorTheme) => {
-      void tariFlowEditorProvider.updateColorScheme(colorTheme);
-    }),
-  );
 }
 
 function fetchConfiguration(): TariConfiguration {

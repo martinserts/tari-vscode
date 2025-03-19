@@ -1,8 +1,8 @@
-import { ReactFlow, Background, Controls, MarkerType } from "@xyflow/react";
+import { ReactFlow, Background, Controls, MarkerType, useViewport, ReactFlowProvider, Viewport } from "@xyflow/react";
 import useStore from "../../store/store";
 import { useShallow } from "zustand/shallow";
 import { QueryBuilderState } from "@/store/types";
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import CallNode from "./nodes/call-node";
 import ButtonEdge from "./edges/button-edge";
 
@@ -21,6 +21,7 @@ const selector = (state: QueryBuilderState) => ({
   onConnect: state.onConnect,
   addNode: state.addNode,
   isValidConnection: state.isValidConnection,
+  updateCenter: state.updateCenter,
 });
 
 export interface QueryBuilderProps {
@@ -36,9 +37,32 @@ const edgeTypes = {
   buttonEdge: ButtonEdge,
 };
 
-function QueryBuilder({ theme, readOnly = false }: QueryBuilderProps) {
-  const { nodes, edges, setReadOnly, onNodesChange, onEdgesChange, onConnect, isValidConnection } = useStore(
-    useShallow(selector),
+function Flow({ theme, readOnly = false }: QueryBuilderProps) {
+  const { nodes, edges, setReadOnly, onNodesChange, onEdgesChange, onConnect, isValidConnection, updateCenter } =
+    useStore(useShallow(selector));
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const viewport = useViewport();
+  const reactflowRef = useRef<HTMLDivElement>(null);
+
+  const updateCenterCoordinates = useCallback(
+    (viewport: Viewport) => {
+      if (!reactflowRef.current) return;
+
+      const { width, height } = dimensions;
+
+      const centerX = (width / 2 - viewport.x) / viewport.zoom;
+      const centerY = (height / 2 - viewport.y) / viewport.zoom;
+
+      updateCenter(centerX, centerY);
+    },
+    [dimensions, updateCenter],
+  );
+
+  const onMove = useCallback(
+    (_event: unknown, viewport: Viewport) => {
+      updateCenterCoordinates(viewport);
+    },
+    [updateCenterCoordinates],
   );
 
   useEffect(() => {
@@ -51,34 +75,68 @@ function QueryBuilder({ theme, readOnly = false }: QueryBuilderProps) {
     setReadOnly(readOnly);
   }, [setReadOnly, readOnly]);
 
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (reactflowRef.current) {
+        setDimensions({
+          width: reactflowRef.current.clientWidth,
+          height: reactflowRef.current.clientHeight,
+        });
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+
+    return () => {
+      window.removeEventListener("resize", updateDimensions);
+    };
+  }, []);
+
+  useEffect(() => {
+    updateCenterCoordinates(viewport);
+  }, [viewport, updateCenterCoordinates]);
+
   return (
-    <ReactFlow
-      nodesConnectable={!readOnly}
-      nodesDraggable={!readOnly}
-      nodesFocusable={!readOnly}
-      edgesFocusable={!readOnly}
-      edgesReconnectable={!readOnly}
-      nodeTypes={nodeTypes}
-      edgeTypes={edgeTypes}
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onConnect={onConnect}
-      colorMode={theme}
-      fitView
-      proOptions={{ hideAttribution: true }}
-      defaultEdgeOptions={{
-        type: "buttonEdge",
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-        },
-      }}
-      isValidConnection={isValidConnection}
-    >
-      <Background />
-      <Controls />
-    </ReactFlow>
+    <ReactFlowProvider>
+      <ReactFlow
+        ref={reactflowRef}
+        nodesConnectable={!readOnly}
+        nodesDraggable={!readOnly}
+        nodesFocusable={!readOnly}
+        edgesFocusable={!readOnly}
+        edgesReconnectable={!readOnly}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onMove={onMove}
+        colorMode={theme}
+        fitView
+        proOptions={{ hideAttribution: true }}
+        defaultEdgeOptions={{
+          type: "buttonEdge",
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+          },
+        }}
+        isValidConnection={isValidConnection}
+      >
+        <Background />
+        <Controls />
+      </ReactFlow>
+    </ReactFlowProvider>
+  );
+}
+
+function QueryBuilder({ theme, readOnly = false }: QueryBuilderProps) {
+  return (
+    <ReactFlowProvider>
+      <Flow theme={theme} readOnly={readOnly} />
+    </ReactFlowProvider>
   );
 }
 

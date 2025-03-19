@@ -25,8 +25,10 @@ export interface QueryBuilderState {
   readOnly: boolean;
   nodes: CallNode[];
   edges: Edge[];
-  lastY: number;
+  centerX: number;
+  centerY: number;
   changeCounter: number;
+  updateCenter: (centerX: number, centerY: number) => void;
   setReadOnly: (value: boolean) => void;
   onNodesChange: OnNodesChange<CallNode>;
   onEdgesChange: OnEdgesChange;
@@ -34,8 +36,7 @@ export interface QueryBuilderState {
   setNodes: (nodes: CallNode[]) => void;
   setEdges: (edges: Edge[]) => void;
   addNode: (node: CallNode) => void;
-  incrementLastY: () => void;
-  addCallNodes: (callNodes: CallNodeData[]) => void;
+  addCallNodes: (callNodes: CallNodeData[], x: number, y: number) => void;
   updateNodeData: (nodeId: string, newData: Partial<CallNodeData>) => void;
   updateNodeArgValue: (nodeId: string, argName: string, value: SafeParseReturnType<unknown, unknown>) => void;
   updateNodeComponentAddress: (nodeId: string, value: SafeParseReturnType<unknown, unknown>) => void;

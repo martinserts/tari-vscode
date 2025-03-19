@@ -1,6 +1,6 @@
 import { TariProvider } from "@tari-project/tarijs";
 import { useCollapsibleToggle } from "../hooks/collapsible-toggle";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTariStore } from "../store/tari-store";
 import {
   VscodeButton,
@@ -8,6 +8,7 @@ import {
   VscodeDivider,
   VscodeFormContainer,
   VscodeFormGroup,
+  VscodeIcon,
   VscodeLabel,
   VscodeProgressRing,
   VscodeTextfield,
@@ -26,6 +27,7 @@ interface TemplateActionsProps {
 }
 
 function TemplateActions({ provider, open, onToggle }: TemplateActionsProps) {
+  const newFlowRef = useRef<ve.VscodeIcon | null>(null);
   const messenger = useTariStore((state) => state.messenger);
   const [jsonDocument, setJsonDocument] = useState<JsonDocument | undefined>(undefined);
   const [outlineItems, setOutlineItems] = useState<JsonOutlineItem[]>([]);
@@ -44,6 +46,33 @@ function TemplateActions({ provider, open, onToggle }: TemplateActionsProps) {
       });
     }
   };
+
+  const handleAddNode = async (item: JsonOutlineItem) => {
+    if (messenger && jsonDocument && templateAddress) {
+      await messenger.send("addTariFlowNode", {
+        template: jsonDocument.json as Record<string, unknown>,
+        templateAddress,
+        functionName: item.title,
+      });
+    }
+  };
+
+  const handleNewFlowClick = (event: MouseEvent) => {
+    event.stopPropagation();
+    if (messenger) {
+      messenger.send("newTariFlow", undefined).catch(console.log);
+    }
+  };
+
+  useEffect(() => {
+    if (!newFlowRef.current) return;
+    const newFlowElement = newFlowRef.current as HTMLElement;
+
+    newFlowElement.addEventListener("click", handleNewFlowClick);
+    return () => {
+      newFlowElement.removeEventListener("click", handleNewFlowClick);
+    };
+  });
 
   const fetchTemplateDetails = useCallback(
     async (templateAddressToFetch: string) => {
@@ -73,6 +102,14 @@ function TemplateActions({ provider, open, onToggle }: TemplateActionsProps) {
   return (
     <>
       <VscodeCollapsible ref={collapsibleRef} open={open ?? false} title="Template Details">
+        <VscodeIcon
+          ref={newFlowRef}
+          name="type-hierarchy-sub"
+          id="btn-new-flow"
+          actionIcon
+          title="Open New Query Builder"
+          slot="actions"
+        />
         <VscodeFormContainer>
           <VscodeFormGroup>
             <VscodeLabel htmlFor="templateAddress">Template Address</VscodeLabel>
@@ -104,7 +141,10 @@ function TemplateActions({ provider, open, onToggle }: TemplateActionsProps) {
               <JsonOutlineTree
                 items={outlineItems}
                 onSelect={(item) => {
-                  void handleItemSelect(item);
+                  handleItemSelect(item).catch(console.log);
+                }}
+                onAction={(_actionId, item) => {
+                  handleAddNode(item).catch(console.log);
                 }}
               />
             </div>

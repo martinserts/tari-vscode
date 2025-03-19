@@ -96,7 +96,7 @@ function AccountActions({ provider, open, onToggle }: AccountActionsProps) {
               <JsonOutlineTree
                 items={outlineItems}
                 onSelect={(item) => {
-                  void handleItemSelect(item);
+                  handleItemSelect(item).catch(console.log);
                 }}
               />
             </div>

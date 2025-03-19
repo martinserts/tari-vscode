@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { getHtmlForWebview } from "../webview";
-import { Messenger, TariFlowMessages } from "tari-extension-common";
+import { Messenger, TariFlowMessages, TariFlowNodeDetails } from "tari-extension-common";
 import { getTheme } from "../theme";
 
 class TariFlowDocument implements vscode.CustomDocument {
@@ -44,7 +44,7 @@ export class TariFlowEditorProvider implements vscode.CustomEditorProvider<TariF
   constructor(private readonly context: vscode.ExtensionContext) {}
 
   public register(): vscode.Disposable {
-    vscode.commands.registerCommand("tari.flow-document.new", () => {
+    const newFlowDocumentCommand = vscode.commands.registerCommand("tari.flow-document.new", () => {
       const workspaceFolders = vscode.workspace.workspaceFolders;
       if (!workspaceFolders) {
         vscode.window.showErrorMessage("Creating new Tari Flow files currently requires opening a workspace");
@@ -58,12 +58,39 @@ export class TariFlowEditorProvider implements vscode.CustomEditorProvider<TariF
       vscode.commands.executeCommand("vscode.openWith", uri, TariFlowEditorProvider.viewType);
     });
 
-    return vscode.window.registerCustomEditorProvider(TariFlowEditorProvider.viewType, this, {
+    const customEditor = vscode.window.registerCustomEditorProvider(TariFlowEditorProvider.viewType, this, {
       webviewOptions: {
         retainContextWhenHidden: true,
       },
       supportsMultipleEditorsPerDocument: false,
     });
+
+    return vscode.Disposable.from(newFlowDocumentCommand, customEditor);
+  }
+
+  public async addNode(details: TariFlowNodeDetails) {
+    const activeTab = vscode.window.tabGroups.activeTabGroup.activeTab;
+    if (!activeTab) {
+      vscode.window.showErrorMessage("Make Query Builder tab active, so node can be added to it.", { modal: true });
+      return;
+    }
+    const document = activeTab.input as vscode.TabInputCustom;
+    if (document.viewType !== TariFlowEditorProvider.viewType) {
+      vscode.window.showErrorMessage("Make Query Builder tab active, so node can be added to it.", { modal: true });
+      return;
+    }
+
+    const entries = [...this.webviews.get(document.uri)];
+    if (!entries.length) {
+      return;
+    }
+
+    const { messenger } = entries[0];
+    try {
+      await messenger.send("addNode", details);
+    } catch (e) {
+      vscode.window.showErrorMessage("Failed to add node", { modal: true, detail: String(e) });
+    }
   }
 
   public async openCustomDocument(uri: vscode.Uri, openContext: { backupId?: string }): Promise<TariFlowDocument> {
@@ -72,12 +99,16 @@ export class TariFlowEditorProvider implements vscode.CustomEditorProvider<TariF
   }
 
   private static async initDocument(document: TariFlowDocument, messenger: Messenger<TariFlowMessages>) {
-    const editable = !!vscode.workspace.fs.isWritableFileSystem(document.uri.scheme);
-    await messenger.send("init", {
-      theme: getTheme(vscode.window.activeColorTheme),
-      data: document.documentData,
-      editable,
-    });
+    const editable = vscode.workspace.fs.isWritableFileSystem(document.uri.scheme) !== false;
+    try {
+      await messenger.send("init", {
+        theme: getTheme(vscode.window.activeColorTheme),
+        data: document.documentData,
+        editable,
+      });
+    } catch (e) {
+      vscode.window.showErrorMessage("Failed to load Tari flow", { modal: true, detail: String(e) });
+    }
   }
 
   public async resolveCustomEditor(document: TariFlowDocument, webviewPanel: vscode.WebviewPanel): Promise<void> {
@@ -121,13 +152,17 @@ export class TariFlowEditorProvider implements vscode.CustomEditorProvider<TariF
     }
 
     const { messenger } = entries[0];
-    const data = await messenger.send("getData", undefined);
-    if (cancellation.isCancellationRequested) {
-      return;
-    }
+    try {
+      const data = await messenger.send("getData", undefined);
+      if (cancellation.isCancellationRequested) {
+        return;
+      }
 
-    const encodedData = new TextEncoder().encode(data);
-    await vscode.workspace.fs.writeFile(destination, encodedData);
+      const encodedData = new TextEncoder().encode(data);
+      await vscode.workspace.fs.writeFile(destination, encodedData);
+    } catch (e) {
+      vscode.window.showErrorMessage("Failed to save Tari flow", { modal: true, detail: String(e) });
+    }
   }
 
   public async revertCustomDocument(document: TariFlowDocument, cancellation: vscode.CancellationToken): Promise<void> {
@@ -168,11 +203,15 @@ export class TariFlowEditorProvider implements vscode.CustomEditorProvider<TariF
 
   public async updateColorScheme(colorTheme: vscode.ColorTheme) {
     const theme = getTheme(colorTheme);
-    await Promise.all(
-      [...this.webviews.webviews].map(({ messenger }) => {
-        messenger.send("setTheme", theme);
-      }),
-    );
+    try {
+      await Promise.all(
+        [...this.webviews.webviews].map(({ messenger }) => {
+          messenger.send("setTheme", theme);
+        }),
+      );
+    } catch (e) {
+      vscode.window.showErrorMessage("Failed to update color scheme in Tari flow", { modal: false, detail: String(e) });
+    }
   }
 }
 

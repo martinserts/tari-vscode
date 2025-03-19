@@ -7,8 +7,12 @@ const useStore = create<QueryBuilderState>((set, get) => ({
   readOnly: false,
   nodes: [],
   edges: [],
-  lastY: 0,
+  centerX: 0,
+  centerY: 0,
   changeCounter: 0,
+  updateCenter: (centerX, centerY) => {
+    set({ centerX, centerY });
+  },
   setReadOnly: (value) => {
     set({ readOnly: value });
   },
@@ -48,20 +52,18 @@ const useStore = create<QueryBuilderState>((set, get) => ({
       changeCounter: state.changeCounter + 1,
     }));
   },
-  incrementLastY: () => {
-    set((state) => ({ lastY: state.lastY + 340 }));
-  },
-  addCallNodes: (callNodes) => {
+  addCallNodes: (callNodes, x, y) => {
+    let yOffset = 0;
     for (const callNode of callNodes) {
-      const y = get().lastY;
-      get().incrementLastY();
       const newNode: CallNode = {
         id: uuidv4(),
         type: "callNode",
-        position: { x: 0, y },
+        position: { x, y: y + yOffset },
         data: callNode,
       };
       get().addNode(newNode);
+
+      yOffset += 300;
     }
   },
   updateNodeData: (nodeId, newData) => {

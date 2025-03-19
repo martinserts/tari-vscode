@@ -177,7 +177,7 @@ function ListSubstatesActions({ provider, onViewDetails, open, onToggle }: ListS
               <JsonOutlineTree
                 items={outlineItems}
                 onSelect={(item) => {
-                  void handleItemSelect(item);
+                  handleItemSelect(item).catch(console.log);
                 }}
                 onAction={(_actionId, item) => {
                   onViewDetails(item);

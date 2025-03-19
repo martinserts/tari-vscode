@@ -38,9 +38,17 @@ const argumentsContainer: KnownJsonPart = {
     if (!functionName) {
       return undefined;
     }
+    const actions = [
+      {
+        actionId: "add-node",
+        icon: "add",
+        tooltip: "Add to query builder",
+      },
+    ];
     return {
       title: functionName.value as string,
       icon: "symbol-parameter",
+      actions,
     };
   },
 };

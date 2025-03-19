@@ -21,10 +21,14 @@ function App() {
         walletFunctions as TemplateDef,
         "0000000000000000000000000000000000000000000000000000000000000000",
       );
-      addCallNodes([
-        ...tariSwapPoolReader.getCallNodes(["add_liquidity", "swap", "remove_liquidity", "new"]),
-        ...walletReader.getCallNodes(["create"]),
-      ]);
+      addCallNodes(
+        [
+          ...tariSwapPoolReader.getCallNodes(["add_liquidity", "swap", "remove_liquidity", "new"]),
+          ...walletReader.getCallNodes(["create"]),
+        ],
+        0,
+        0,
+      );
       added.current = true;
     }
   }, [addCallNodes]);

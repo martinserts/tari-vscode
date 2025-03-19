@@ -1,6 +1,12 @@
 import { TariConfiguration } from "../configuration/tari-configuration";
 import { JsonOutlineItem } from "../outline";
 
+export interface TariFlowNodeDetails {
+  template: Record<string, unknown>;
+  templateAddress: string;
+  functionName: string;
+}
+
 export interface WebViewMessages {
   /** Webview -> Extension */
   showError: {
@@ -55,6 +61,15 @@ export interface WebViewMessages {
     };
     response: undefined;
   };
+  newTariFlow: {
+    request: undefined;
+    response: undefined;
+  };
+
+  addTariFlowNode: {
+    request: TariFlowNodeDetails;
+    response: undefined;
+  };
 
   /** Extension -> Webview */
   configurationChanged: {
@@ -95,5 +110,10 @@ export interface TariFlowMessages {
   getData: {
     request: undefined;
     response: string;
+  };
+
+  addNode: {
+    request: TariFlowNodeDetails;
+    response: undefined;
   };
 }

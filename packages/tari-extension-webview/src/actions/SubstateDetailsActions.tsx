@@ -118,7 +118,7 @@ function SubstateDetailsActions({
               <JsonOutlineTree
                 items={outlineItems}
                 onSelect={(item) => {
-                  void handleItemSelect(item);
+                  handleItemSelect(item).catch(console.log);
                 }}
               />
             </div>

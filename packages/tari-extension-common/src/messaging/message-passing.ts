@@ -13,31 +13,50 @@ interface MessageRequest<K extends ActionName, T extends AllowedActions<K>> {
   data: T[K]["request"];
 }
 
+type SuccessOrFailureReponse<K extends ActionName, T extends AllowedActions<K>> =
+  | { success: true; data: T[K]["response"] }
+  | { success: false; exception: Error };
+
 interface MessageResponse<K extends ActionName, T extends AllowedActions<K>> {
   correlationId: string;
   command: K;
-  response: T[K]["response"];
+  response: SuccessOrFailureReponse<K, T>;
 }
 
 export type Message<K extends ActionName, T extends AllowedActions<K>> = MessageRequest<K, T> | MessageResponse<K, T>;
 
+const DEFAULT_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+
 interface MessengerOptions<T extends AllowedActions<keyof T>> {
   sendMessage: (msg: Message<keyof T, T>) => void;
   onMessage: (callback: (msg: Message<keyof T, T>) => void) => void;
+  requestTimeout?: number;
 }
 
 export class Messenger<T extends AllowedActions<keyof T>> {
-  private pendingRequests = new Map<string, (response: unknown) => void>();
+  private pendingRequests = new Map<
+    string,
+    { resolve: (response: T[keyof T]["response"]) => void; reject: (error: Error) => void; timeoutId: NodeJS.Timeout }
+  >();
   private handlers = new Map<keyof T, (request: unknown) => Promise<unknown>>();
 
   constructor(private options: MessengerOptions<T>) {
     options.onMessage((msg) => this.handleMessage(msg));
   }
 
-  public send<K extends keyof T>(command: K, data: T[K]["request"]): Promise<T[K]["response"]> {
-    return new Promise((resolve) => {
+  public send<K extends keyof T>(command: K, data: T[K]["request"], timeout?: number): Promise<T[K]["response"]> {
+    return new Promise((resolve, reject) => {
       const correlationId = crypto.randomUUID();
-      this.pendingRequests.set(correlationId, resolve);
+
+      const timeoutId = setTimeout(
+        () => {
+          this.pendingRequests.delete(correlationId);
+          reject(new Error("Timed out"));
+        },
+        timeout ?? this.options.requestTimeout ?? DEFAULT_TIMEOUT,
+      );
+
+      this.pendingRequests.set(correlationId, { resolve, reject, timeoutId });
       this.options.sendMessage({ correlationId, command, data });
     });
   }
@@ -51,16 +70,28 @@ export class Messenger<T extends AllowedActions<keyof T>> {
 
   private async handleMessage(msg: Message<keyof T, T>) {
     if ("response" in msg) {
-      const resolve = this.pendingRequests.get(msg.correlationId);
-      if (resolve) {
+      const entry = this.pendingRequests.get(msg.correlationId);
+      if (entry) {
         this.pendingRequests.delete(msg.correlationId);
-        resolve(msg.response);
+        clearTimeout(entry.timeoutId);
+        if (msg.response.success) {
+          entry.resolve(msg.response.data);
+        } else {
+          entry.reject(msg.response.exception);
+        }
       }
     } else {
       const handler = this.handlers.get(msg.command);
       if (!handler) return;
 
-      const response = (await handler(msg.data)) ?? null;
+      let response: MessageResponse<keyof T, T>["response"] | undefined;
+      try {
+        const data = (await handler(msg.data)) ?? null;
+        response = { success: true, data };
+      } catch (e) {
+        response = { success: false, exception: e as Error };
+      }
+
       this.options.sendMessage({
         correlationId: msg.correlationId,
         command: msg.command,

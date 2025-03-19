@@ -71,7 +71,7 @@ function CallNode({ id, data }: NodeProps<CallNode>) {
           <Badge>{templateName}</Badge>
         </div>
       }
-      <div className="absolute top-1 right-2">
+      <div className="absolute top-1 right-2 nodrag nopan">
         <Button
           variant="ghost"
           size="icon"
@@ -84,7 +84,7 @@ function CallNode({ id, data }: NodeProps<CallNode>) {
       </div>
       <h3 className="text-center font-bold p-2 border-b">{fn.name}</h3>
       {isMethod && (
-        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-md mb-2 w-full">
+        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-md mb-2 w-full min-w-[64ch]">
           <CallInputText
             readOnly={readOnly}
             name=""
