@@ -25,7 +25,9 @@ interface MessageResponse<K extends ActionName, T extends AllowedActions<K>> {
 
 export type Message<K extends ActionName, T extends AllowedActions<K>> = MessageRequest<K, T> | MessageResponse<K, T>;
 
-const DEFAULT_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+// TODO:
+// const DEFAULT_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+const DEFAULT_TIMEOUT = 3 * 1000;
 
 interface MessengerOptions<T extends AllowedActions<keyof T>> {
   sendMessage: (msg: Message<keyof T, T>) => void;

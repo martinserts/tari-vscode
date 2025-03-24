@@ -9,6 +9,8 @@ import ButtonEdge from "./edges/button-edge";
 import "../../index.css";
 import "@xyflow/react/dist/style.css";
 import "@/xy-theme.css";
+import { TariFlowNodeDetails } from "@/types";
+import { TemplateReader } from "@/query-builder/template-reader";
 
 export type Theme = "dark" | "light";
 
@@ -22,6 +24,7 @@ const selector = (state: QueryBuilderState) => ({
   addNode: state.addNode,
   isValidConnection: state.isValidConnection,
   updateCenter: state.updateCenter,
+  addCallNodes: state.addCallNodes,
 });
 
 export interface QueryBuilderProps {
@@ -38,31 +41,49 @@ const edgeTypes = {
 };
 
 function Flow({ theme, readOnly = false }: QueryBuilderProps) {
-  const { nodes, edges, setReadOnly, onNodesChange, onEdgesChange, onConnect, isValidConnection, updateCenter } =
-    useStore(useShallow(selector));
+  const {
+    nodes,
+    edges,
+    setReadOnly,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    isValidConnection,
+    updateCenter,
+    addCallNodes,
+  } = useStore(useShallow(selector));
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const viewport = useViewport();
+  const [viewport, setViewport] = useState(useViewport());
   const reactflowRef = useRef<HTMLDivElement>(null);
-
-  const updateCenterCoordinates = useCallback(
-    (viewport: Viewport) => {
-      if (!reactflowRef.current) return;
-
-      const { width, height } = dimensions;
-
-      const centerX = (width / 2 - viewport.x) / viewport.zoom;
-      const centerY = (height / 2 - viewport.y) / viewport.zoom;
-
-      updateCenter(centerX, centerY);
-    },
-    [dimensions, updateCenter],
-  );
 
   const onMove = useCallback(
     (_event: unknown, viewport: Viewport) => {
-      updateCenterCoordinates(viewport);
+      setViewport(viewport);
     },
-    [updateCenterCoordinates],
+    [setViewport],
+  );
+
+  const onDragOver = useCallback((event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent<HTMLElement>) => {
+      event.preventDefault();
+
+      const data = event.dataTransfer.getData("application/json");
+      if (data) {
+        const json = JSON.parse(data) as TariFlowNodeDetails;
+        const reader = new TemplateReader(json.template, json.templateAddress);
+
+        const flowX = (event.clientX - viewport.x) / viewport.zoom;
+        const flowY = (event.clientY - viewport.y) / viewport.zoom;
+
+        addCallNodes(reader.getCallNodes([json.functionName]), flowX, flowY);
+      }
+    },
+    [addCallNodes, viewport],
   );
 
   useEffect(() => {
@@ -94,8 +115,15 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
   }, []);
 
   useEffect(() => {
-    updateCenterCoordinates(viewport);
-  }, [viewport, updateCenterCoordinates]);
+    if (!reactflowRef.current) return;
+
+    const { width, height } = dimensions;
+
+    const centerX = (width / 2 - viewport.x) / viewport.zoom;
+    const centerY = (height / 2 - viewport.y) / viewport.zoom;
+
+    updateCenter(centerX, centerY);
+  }, [dimensions, viewport, updateCenter]);
 
   return (
     <ReactFlowProvider>
@@ -114,6 +142,8 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onMove={onMove}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
         colorMode={theme}
         fitView
         proOptions={{ hideAttribution: true }}

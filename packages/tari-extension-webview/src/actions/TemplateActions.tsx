@@ -57,6 +57,17 @@ function TemplateActions({ provider, open, onToggle }: TemplateActionsProps) {
     }
   };
 
+  const handleDragNode = (item: JsonOutlineItem) => {
+    if (!jsonDocument || !templateAddress) {
+      return null;
+    }
+    return {
+      template: jsonDocument.json,
+      templateAddress,
+      functionName: item.title,
+    };
+  };
+
   const handleNewFlowClick = (event: MouseEvent) => {
     event.stopPropagation();
     if (messenger) {
@@ -107,7 +118,7 @@ function TemplateActions({ provider, open, onToggle }: TemplateActionsProps) {
           name="type-hierarchy-sub"
           id="btn-new-flow"
           actionIcon
-          title="Open New Query Builder"
+          title="Open New Transaction Builder"
           slot="actions"
         />
         <VscodeFormContainer>
@@ -146,6 +157,7 @@ function TemplateActions({ provider, open, onToggle }: TemplateActionsProps) {
                 onAction={(_actionId, item) => {
                   handleAddNode(item).catch(console.log);
                 }}
+                onDrag={handleDragNode}
               />
             </div>
             <VscodeDivider />

@@ -49,6 +49,7 @@ const argumentsContainer: KnownJsonPart = {
       title: functionName.value as string,
       icon: "symbol-parameter",
       actions,
+      draggable: true,
     };
   },
 };

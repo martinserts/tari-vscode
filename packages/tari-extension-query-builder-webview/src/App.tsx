@@ -17,6 +17,7 @@ interface AppProps {
 function App({ messenger }: AppProps) {
   const [theme, setTheme] = useState<Theme>("dark");
   const [editable, setEditable] = useState(true);
+  const [readySent, setReadySent] = useState(false);
 
   const changeCounter = useStore((store) => store.changeCounter);
   const saveStateToString = useStore((store) => store.saveStateToString);
@@ -66,8 +67,11 @@ function App({ messenger }: AppProps) {
       return Promise.resolve(undefined);
     });
 
-    messenger.send("ready", undefined).catch(console.log);
-  }, [messenger, saveStateToString, loadStateFromString, addNodesToCenter]);
+    if (!readySent) {
+      messenger.send("ready", undefined).catch(console.log);
+      setReadySent(true);
+    }
+  }, [messenger, saveStateToString, loadStateFromString, addNodesToCenter, readySent, setReadySent]);
 
   useEffect(() => {
     if (!messenger || !changeCounterDebounced) {
