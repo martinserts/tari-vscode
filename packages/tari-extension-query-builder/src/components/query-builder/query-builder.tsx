@@ -1,16 +1,29 @@
-import { ReactFlow, Background, Controls, MarkerType, useViewport, ReactFlowProvider, Viewport } from "@xyflow/react";
+import { ReactFlow, Background, Controls, useViewport, ReactFlowProvider, Viewport, Panel, MiniMap } from "@xyflow/react";
+import { CALL_NODE_DRAG_DROP_TYPE } from "tari-extension-common";
 import useStore from "../../store/store";
 import { useShallow } from "zustand/shallow";
-import { QueryBuilderState } from "@/store/types";
+import { NodeType, QueryBuilderState } from "@/store/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import CallNode from "./nodes/call-node";
 import ButtonEdge from "./edges/button-edge";
+import { TariFlowNodeDetails } from "@/types";
+import { TemplateReader } from "@/query-builder/template-reader";
 
 import "../../index.css";
 import "@xyflow/react/dist/style.css";
 import "@/xy-theme.css";
-import { TariFlowNodeDetails } from "@/types";
-import { TemplateReader } from "@/query-builder/template-reader";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { Button } from "../ui/button";
+import { CheckCircledIcon, EnterIcon } from "@radix-ui/react-icons";
+import { RocketIcon } from "lucide-react";
+import StartNode from "./nodes/start-node";
+import EmitLogNode from "./nodes/emit-log-node";
 
 export type Theme = "dark" | "light";
 
@@ -24,7 +37,7 @@ const selector = (state: QueryBuilderState) => ({
   addNode: state.addNode,
   isValidConnection: state.isValidConnection,
   updateCenter: state.updateCenter,
-  addCallNodes: state.addCallNodes,
+  addNodeAt: state.addNodeAt,
 });
 
 export interface QueryBuilderProps {
@@ -33,7 +46,9 @@ export interface QueryBuilderProps {
 }
 
 const nodeTypes = {
-  callNode: CallNode,
+  [NodeType.CallNode]: CallNode,
+  [NodeType.StartNode]: StartNode,
+  [NodeType.EmitLogNode]: EmitLogNode,
 };
 
 const edgeTypes = {
@@ -50,7 +65,7 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
     onConnect,
     isValidConnection,
     updateCenter,
-    addCallNodes,
+    addNodeAt,
   } = useStore(useShallow(selector));
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [viewport, setViewport] = useState(useViewport());
@@ -72,7 +87,7 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
     (event: React.DragEvent<HTMLElement>) => {
       event.preventDefault();
 
-      const data = event.dataTransfer.getData("application/json");
+      const data = event.dataTransfer.getData(CALL_NODE_DRAG_DROP_TYPE);
       if (data) {
         const json = JSON.parse(data) as TariFlowNodeDetails;
         const reader = new TemplateReader(json.template, json.templateAddress);
@@ -80,11 +95,20 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
         const flowX = (event.clientX - viewport.x) / viewport.zoom;
         const flowY = (event.clientY - viewport.y) / viewport.zoom;
 
-        addCallNodes(reader.getCallNodes([json.functionName]), flowX, flowY);
+        const [nodeData] = reader.getCallNodes([json.functionName]);
+        addNodeAt({ type: NodeType.CallNode, data: nodeData }, { x: flowX, y: flowY });
       }
     },
-    [addCallNodes, viewport],
+    [addNodeAt, viewport],
   );
+
+  const handleAddStartNode = useCallback(() => {
+    addNodeAt({ type: NodeType.StartNode, data: {} });
+  }, [addNodeAt]);
+
+  const handleAddEmitLogNode = useCallback(() => {
+    addNodeAt({ type: NodeType.EmitLogNode, data: {} });
+  }, [addNodeAt]);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -146,17 +170,37 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
         onDrop={onDrop}
         colorMode={theme}
         fitView
+        minZoom={0.05}
         proOptions={{ hideAttribution: true }}
         defaultEdgeOptions={{
           type: "buttonEdge",
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-          },
         }}
         isValidConnection={isValidConnection}
       >
+        <Panel position="top-right" style={{ right: "15px" }}>
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">Add Instruction</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuGroup>
+                <DropdownMenuItem onSelect={handleAddStartNode}>
+                  <EnterIcon /> Start Node
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleAddEmitLogNode}>
+                  <RocketIcon /> Emit Log
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <CheckCircledIcon />
+                  Assert Bucket Contains
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </Panel>
         <Background />
         <Controls />
+        <MiniMap nodeStrokeWidth={3} />
       </ReactFlow>
     </ReactFlowProvider>
   );

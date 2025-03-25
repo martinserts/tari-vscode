@@ -1,7 +1,11 @@
 import { create } from "zustand";
 import { addEdge, applyNodeChanges, applyEdgeChanges } from "@xyflow/react";
 import { v4 as uuidv4 } from "uuid";
-import { CallNode, PersistedState, type QueryBuilderState } from "./types";
+import { CustomNode, NodeType, PersistedState, type QueryBuilderState } from "./types";
+import { NODE_ENTRY, NODE_EXIT } from "@/components/query-builder/nodes/generic-node.types";
+
+const DROP_NODE_OFFSET_X = 200;
+const DROP_NODE_OFFSET_Y = 50;
 
 const useStore = create<QueryBuilderState>((set, get) => ({
   readOnly: false,
@@ -52,44 +56,43 @@ const useStore = create<QueryBuilderState>((set, get) => ({
       changeCounter: state.changeCounter + 1,
     }));
   },
-  addCallNodes: (callNodes, x, y) => {
-    let yOffset = 0;
-    for (const callNode of callNodes) {
-      const newNode: CallNode = {
-        id: uuidv4(),
-        type: "callNode",
-        position: { x, y: y + yOffset },
-        data: callNode,
-      };
-      get().addNode(newNode);
-
-      yOffset += 300;
-    }
-  },
-  updateNodeData: (nodeId, newData) => {
-    if (!get().readOnly) {
-      set((state) => ({
-        nodes: state.nodes.map((node) => (node.id === nodeId ? { ...node, data: { ...node.data, ...newData } } : node)),
-        changeCounter: state.changeCounter + 1,
-      }));
-    }
+  addNodeAt: (node, position) => {
+    const newNode = {
+      ...node,
+      id: uuidv4(),
+      position: position ?? { x: get().centerX - DROP_NODE_OFFSET_X, y: get().centerY - DROP_NODE_OFFSET_Y },
+    } as unknown as CustomNode;
+    get().addNode(newNode);
   },
   updateNodeArgValue: (nodeId, argName, value) => {
     if (!get().readOnly) {
       set((state) => ({
         nodes: state.nodes.map((node) => {
           if (node.id === nodeId) {
-            const updatedValues = {
-              ...node.data.values,
-              [argName]: value,
-            };
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                values: updatedValues,
-              },
-            };
+            if (node.type === NodeType.CallNode || node.type === NodeType.EmitLogNode) {
+              const updatedValues = {
+                ...node.data.values,
+                [argName]: value,
+              };
+              switch (node.type) {
+                case NodeType.CallNode:
+                  return {
+                    ...node,
+                    data: {
+                      ...node.data,
+                      values: updatedValues,
+                    },
+                  };
+                case NodeType.EmitLogNode:
+                  return {
+                    ...node,
+                    data: {
+                      ...node.data,
+                      values: updatedValues,
+                    },
+                  };
+              }
+            }
           }
           return node;
         }),
@@ -97,11 +100,11 @@ const useStore = create<QueryBuilderState>((set, get) => ({
       }));
     }
   },
-  updateNodeComponentAddress: (nodeId, value) => {
+  updateCallNodeComponentAddress: (nodeId, value) => {
     if (!get().readOnly) {
       set((state) => ({
         nodes: state.nodes.map((node) => {
-          if (node.id === nodeId) {
+          if (node.id === nodeId && node.type === NodeType.CallNode) {
             return {
               ...node,
               data: {
@@ -119,28 +122,38 @@ const useStore = create<QueryBuilderState>((set, get) => ({
   getNodeById: (nodeId) => {
     return get().nodes.find((node) => node.id === nodeId);
   },
-  getNodeDataById: (nodeId) => {
-    const node = get().getNodeById(nodeId);
-    return node?.data;
-  },
   isValidConnection: (connection) => {
     if (
       !connection.source ||
       !connection.target ||
+      !connection.sourceHandle ||
       !connection.targetHandle ||
       connection.source === connection.target
     ) {
       return false;
     }
-    const source = get().getNodeDataById(connection.source);
+    const source = get().getNodeById(connection.source);
     if (!source) {
       return false;
     }
-    const target = get().getNodeDataById(connection.target);
+    const target = get().getNodeById(connection.target);
     if (!target) {
       return false;
     }
-    const targetArgument = target.fn.arguments.find((arg) => arg.name === connection.targetHandle);
+
+    // It is possible to connect entry with exit, but only once
+    if (connection.sourceHandle === NODE_EXIT && connection.targetHandle === NODE_ENTRY) {
+      return (
+        !get().edges.some((edge) => edge.source === connection.source) &&
+        !get().edges.some((edge) => edge.target === connection.target)
+      );
+    }
+
+    if (source.type !== NodeType.CallNode || target.type !== NodeType.CallNode) {
+      return false;
+    }
+
+    const targetArgument = target.data.fn.arguments.find((arg) => arg.name === connection.targetHandle);
     if (!targetArgument) {
       return false;
     }
@@ -148,12 +161,13 @@ const useStore = create<QueryBuilderState>((set, get) => ({
     const alreadyConnected = get().edges.some(
       (edge) => edge.target === connection.target && edge.targetHandle === connection.targetHandle,
     );
-    return !alreadyConnected && JSON.stringify(source.fn.output) === JSON.stringify(targetArgument.arg_type);
+    return !alreadyConnected && JSON.stringify(source.data.fn.output) === JSON.stringify(targetArgument.arg_type);
   },
   removeNode: (nodeId) => {
     if (!get().readOnly) {
       set((state) => ({
         nodes: state.nodes.filter((node) => node.id !== nodeId),
+        edges: state.edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
         changeCounter: state.changeCounter + 1,
       }));
     }

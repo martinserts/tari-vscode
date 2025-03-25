@@ -19,6 +19,7 @@ interface CallInputTextProps extends Omit<CallInputProps, "children"> {
 function CallInputText({
   readOnly = false,
   name,
+  label,
   labelWidth,
   placeHolder,
   type,
@@ -45,7 +46,7 @@ function CallInputText({
   };
 
   return (
-    <CallInput name={name} labelWidth={labelWidth} rowHeight={rowHeight}>
+    <CallInput name={name} label={label} labelWidth={labelWidth} rowHeight={rowHeight}>
       <TooltipProvider>
         <Tooltip open={!!errorMessage}>
           <TooltipTrigger asChild>

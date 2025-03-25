@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDebounce } from "use-debounce";
-import { QueryBuilder, TemplateReader, useStore } from "tari-extension-query-builder";
+import { NodeType, QueryBuilder, TemplateReader, useStore } from "tari-extension-query-builder";
 import { Messenger, TariFlowMessages, TariFlowNodeDetails, Theme } from "tari-extension-common";
 
 import "tari-extension-query-builder/dist/tari-extension-query-builder.css";
 import "./root.css";
 import { TemplateDef } from "@tari-project/typescript-bindings";
-
-const DROP_NODE_OFFSET_X = 200;
-const DROP_NODE_OFFSET_Y = 50;
 
 interface AppProps {
   messenger: Messenger<TariFlowMessages> | undefined;
@@ -22,20 +19,15 @@ function App({ messenger }: AppProps) {
   const changeCounter = useStore((store) => store.changeCounter);
   const saveStateToString = useStore((store) => store.saveStateToString);
   const loadStateFromString = useStore((store) => store.loadStateFromString);
-  const addCallNodes = useStore((store) => store.addCallNodes);
-  const centerX = useStore((store) => store.centerX);
-  const centerY = useStore((store) => store.centerY);
+  const addNodeAt = useStore((store) => store.addNodeAt);
 
   const addNodesToCenter = useCallback(
     (details: TariFlowNodeDetails) => {
       const reader = new TemplateReader(details.template as TemplateDef, details.templateAddress);
-      addCallNodes(
-        reader.getCallNodes([details.functionName]),
-        centerX - DROP_NODE_OFFSET_X,
-        centerY - DROP_NODE_OFFSET_Y,
-      );
+      const [data] = reader.getCallNodes([details.functionName]);
+      addNodeAt({ type: NodeType.CallNode, data });
     },
-    [centerX, centerY, addCallNodes],
+    [addNodeAt],
   );
 
   const [changeCounterDebounced] = useDebounce(changeCounter, 100);

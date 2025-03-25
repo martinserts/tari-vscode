@@ -6,8 +6,15 @@ import {
   type OnEdgesChange,
   type OnConnect,
   IsValidConnection,
+  XYPosition,
 } from "@xyflow/react";
 import { SafeParseReturnType } from "zod";
+
+export enum NodeType {
+  CallNode = "callNode",
+  StartNode = "startNode",
+  EmitLogNode = "emitLogNode",
+}
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export type CallNodeData = {
@@ -18,30 +25,38 @@ export type CallNodeData = {
   fn: FunctionDef;
   values?: Record<string, SafeParseReturnType<unknown, unknown>>;
 };
+export type CallNode = Node<CallNodeData, NodeType.CallNode>;
 
-export type CallNode = Node<CallNodeData, "callNode">;
+export type StartNodeData = Record<string, unknown>;
+export type StartNode = Node<StartNodeData, NodeType.StartNode>;
+
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+export type EmitLogNodeData = {
+  values?: Record<string, SafeParseReturnType<unknown, unknown>>;
+};
+export type EmitLogNode = Node<EmitLogNodeData, NodeType.EmitLogNode>;
+
+export type CustomNode = CallNode | StartNode | EmitLogNode;
 
 export interface QueryBuilderState {
   readOnly: boolean;
-  nodes: CallNode[];
+  nodes: CustomNode[];
   edges: Edge[];
   centerX: number;
   centerY: number;
   changeCounter: number;
   updateCenter: (centerX: number, centerY: number) => void;
   setReadOnly: (value: boolean) => void;
-  onNodesChange: OnNodesChange<CallNode>;
+  onNodesChange: OnNodesChange<CustomNode>;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
-  setNodes: (nodes: CallNode[]) => void;
+  setNodes: (nodes: CustomNode[]) => void;
   setEdges: (edges: Edge[]) => void;
-  addNode: (node: CallNode) => void;
-  addCallNodes: (callNodes: CallNodeData[], x: number, y: number) => void;
-  updateNodeData: (nodeId: string, newData: Partial<CallNodeData>) => void;
+  addNode: (node: CustomNode) => void;
+  addNodeAt: (node: Omit<CustomNode, "id" | "position">, position?: XYPosition) => void;
   updateNodeArgValue: (nodeId: string, argName: string, value: SafeParseReturnType<unknown, unknown>) => void;
-  updateNodeComponentAddress: (nodeId: string, value: SafeParseReturnType<unknown, unknown>) => void;
-  getNodeById: (nodeId: string) => CallNode | undefined;
-  getNodeDataById: (nodeId: string) => CallNodeData | undefined;
+  updateCallNodeComponentAddress: (nodeId: string, value: SafeParseReturnType<unknown, unknown>) => void;
+  getNodeById: (nodeId: string) => CustomNode | undefined;
   isValidConnection: IsValidConnection;
   removeNode: (nodeId: string) => void;
   saveStateToString: () => string;

@@ -3,7 +3,8 @@
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" },
-    { "path": "./tsconfig.lib.json" }
+    { "path": "./tsconfig.lib.json" },
+    { "path": "../tari-extension-common" }
   ],
   "compilerOptions": {
     "baseUrl": ".",

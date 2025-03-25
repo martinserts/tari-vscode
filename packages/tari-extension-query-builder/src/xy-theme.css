@@ -2,8 +2,8 @@
 
 .react-flow {
   /* Custom Variables */
-  --xy-theme-selected: #f57dbd;
-  --xy-theme-hover: #c5c5c5;
+/* --xy-theme-selected: #f57dbd; */
+/* --xy-theme-hover: #c5c5c5; */
   --xy-theme-edge-hover: black;
   --xy-theme-color-focus: #e8e8e8;
 
@@ -15,18 +15,18 @@
 
   --xy-node-border-radius-default: 8px;
 
-  --xy-handle-background-color-default: #ffffff;
-  --xy-handle-border-color-default: #aaaaaa;
+/* --xy-handle-background-color-default: #ffffff; */
+/* --xy-handle-border-color-default: #aaaaaa; */
 
-  --xy-edge-label-color-default: #505050;
+/* --xy-edge-label-color-default: #505050; */
 }
 
 .react-flow.dark {
   --xy-node-boxshadow-default:
-    0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.05), /* light shadow */ 0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.13),
-    /* medium shadow */ 0px 0.51px 1.01px 0px rgba(255, 255, 255, 0.2); /* smallest shadow */
-  --xy-theme-color-focus: #535353;
+      0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.05),  0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.13),
+      0px 0.51px 1.01px 0px rgba(255, 255, 255, 0.2);
   --xy-theme-edge-hover: white;
+  --xy-theme-color-focus: #535353;
 }
 
 /* Customizing Default Theming */
@@ -74,6 +74,26 @@
 .react-flow__edge.selectable.selected .react-flow__edge-path {
   stroke: var(--xy-theme-edge-hover);
 }
+
+/** enter-connection start */
+.enter-connection.react-flow__handle {
+  background-color: var(--xy-handle-background-color-default);
+  width: 17px;
+  height: 17px;
+  border-radius: 0;
+  clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+}
+/** enter-connection end */
+
+/** exit-connection start */
+.exit-connection.react-flow__handle {
+  background-color: var(--xy-handle-background-color-default);
+  width: 17px;
+  height: 17px;
+  border-radius: 0;
+  clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+}
+/** exit-connection end */
 
 .react-flow__handle {
   background-color: var(--xy-handle-background-color-default);

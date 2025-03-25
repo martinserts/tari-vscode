@@ -2,40 +2,50 @@ import { Handle, Position, NodeProps } from "@xyflow/react";
 import CallInputText from "../input/call-input-text";
 import { InputControlType, TariType } from "@/query-builder/tari-type";
 import CallInputCheckbox from "../input/call-input-checkbox";
-import { type CallNode } from "@/store/types";
+import { NodeType, type CallNode } from "@/store/types";
 import useStore from "@/store/store";
 import { useCallback } from "react";
 import { SafeParseReturnType } from "zod";
 import { Separator } from "@radix-ui/react-separator";
-import { ArrowDownIcon, CubeIcon, HomeIcon, TrashIcon } from "@radix-ui/react-icons";
+import { CubeIcon, HomeIcon, TrashIcon } from "@radix-ui/react-icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CALL_NODE_RETURN } from "./call-node.types";
+import { ROW_HEIGHT, ROW_HEIGHT_PX, ROW_PADDING } from "./constamts";
+import EnterConnection from "./enter-connection";
+import ExitConnection from "./exit-connection";
 
 const HANDLE_STARTING_OFFSET = 68;
 const COMPONENT_ADDRESS_HEIGHT = 64;
-const ROW_PADDING = 4;
-const ROW_HEIGHT = 36;
-const ROW_HEIGHT_PX = `${ROW_HEIGHT.toString()}px`;
 
 function CallNode({ id, data }: NodeProps<CallNode>) {
   const { fn, templateName, isMethod } = data;
 
-  const getNodeDataById = useStore((store) => store.getNodeDataById);
+  const getNodeById = useStore((store) => store.getNodeById);
   const updateNodeArgValue = useStore((store) => store.updateNodeArgValue);
-  const getComponentAddress = useStore((store) => store.getNodeDataById(id)?.componentAddress);
-  const updateNodeComponentAddress = useStore((store) => store.updateNodeComponentAddress);
+  const getComponentAddress = useStore((store) => {
+    const node = store.getNodeById(id);
+    if (!node || node.type !== NodeType.CallNode) {
+      return undefined;
+    }
+    return node.data.componentAddress;
+  });
+  const updateNodeComponentAddress = useStore((store) => store.updateCallNodeComponentAddress);
   const removeNode = useStore((store) => store.removeNode);
   const readOnly = useStore((store) => store.readOnly);
 
   const getNodeValue = useCallback(
     (name: string) => {
-      const data = getNodeDataById(id);
-      if (!data?.values) {
+      const node = getNodeById(id);
+      if (!node || node.type !== NodeType.CallNode) {
         return undefined;
       }
-      return data.values[name];
+      if (!node.data.values) {
+        return undefined;
+      }
+      return node.data.values[name];
     },
-    [id, getNodeDataById],
+    [id, getNodeById],
   );
 
   const handleOnChange = (argName: string, value: SafeParseReturnType<unknown, unknown>) => {
@@ -48,8 +58,15 @@ function CallNode({ id, data }: NodeProps<CallNode>) {
   const rowHeight = ROW_HEIGHT + ROW_PADDING;
   const startingHandleOffset = HANDLE_STARTING_OFFSET + (isMethod ? COMPONENT_ADDRESS_HEIGHT : 0);
 
+  const getOutputOffset = () => {
+    const offset = startingHandleOffset + rowHeight * fn.arguments.length + 25;
+    return `${offset.toString()}px`;
+  };
+
   return (
     <>
+      <EnterConnection />
+      <ExitConnection />
       {fn.arguments.map((arg, idx) => {
         return (
           <Handle
@@ -65,7 +82,7 @@ function CallNode({ id, data }: NodeProps<CallNode>) {
         );
       })}
       {
-        <div className="absolute top-3 left-2 flex items-center">
+        <div className="absolute top-3 left-4 flex items-center">
           {isMethod && <CubeIcon className="h-5 w-5 mr-1" />}
           {!isMethod && <HomeIcon className="h-5 w-5 mr-1" />}
           <Badge>{templateName}</Badge>
@@ -125,6 +142,7 @@ function CallNode({ id, data }: NodeProps<CallNode>) {
             case InputControlType.CheckBoxInput:
               return (
                 <CallInputCheckbox
+                  readOnly={readOnly}
                   key={arg.name}
                   name={arg.name}
                   value={getNodeValue(arg.name)}
@@ -138,16 +156,17 @@ function CallNode({ id, data }: NodeProps<CallNode>) {
         })}
       </form>
       <Separator className="my-4 h-px w-full bg-gray-300 dark:bg-gray-600" />
-      <div className="flex items-center justify-center">
-        <ArrowDownIcon className="mr-2 h-5 w-5 text-gray-500" />
-        <span className="font-semibold text-lg pr-8">{outputType.prompt}</span>
+      <div className="flex justify-end w-full">
+        <span className="font-semibold text-lg pr-2">{outputType.prompt}</span>
       </div>
       {!outputType.isVoid() && (
         <Handle
+          id={CALL_NODE_RETURN}
           type="source"
-          position={Position.Bottom}
+          position={Position.Right}
           style={{
             border: "2px solid #608bb9",
+            top: getOutputOffset(),
           }}
         />
       )}

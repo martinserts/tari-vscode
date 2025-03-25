@@ -1,6 +1,6 @@
 import { VscodeLabel, VscodeTree } from "@vscode-elements/react-elements";
 import * as ve from "@vscode-elements/elements";
-import { JsonOutlineItem } from "tari-extension-common";
+import { CALL_NODE_DRAG_DROP_TYPE, JsonOutlineItem } from "tari-extension-common";
 import { VscTreeActionEvent, VscTreeSelectEvent } from "@vscode-elements/elements/dist/vscode-tree/vscode-tree";
 import { buildTree, TreeNode } from "../json-parser/tree-builder";
 import { useCallback, useEffect, useRef } from "react";
@@ -53,7 +53,7 @@ function JsonOutlineTree({ items, onSelect, onAction, onDrag }: JsonOutlineProps
     (event: DragEvent, item: JsonOutlineItem) => {
       if (event.dataTransfer && onDrag) {
         const data = onDrag(item);
-        event.dataTransfer.setData("application/json", JSON.stringify(data));
+        event.dataTransfer.setData(CALL_NODE_DRAG_DROP_TYPE, JSON.stringify(data));
         event.dataTransfer.effectAllowed = "move";
       }
     },

@@ -2,14 +2,14 @@ import "./root.css";
 import QueryBuilder from "./components/query-builder/query-builder";
 import { useEffect, useRef } from "react";
 import tariSwapPoolFunctions from "./stories/data/tari-swap-pool.json";
-import walletFunctions from "./stories/data/wallet-functions.json";
 import { TemplateDef } from "@tari-project/typescript-bindings";
 import useStore from "./store/store";
 import { TemplateReader } from "./query-builder/template-reader";
+import { NodeType } from "./store/types";
 
 function App() {
   const added = useRef<boolean>(false);
-  const addCallNodes = useStore((store) => store.addCallNodes);
+  const addNodeAt = useStore((store) => store.addNodeAt);
 
   useEffect(() => {
     if (!added.current) {
@@ -17,21 +17,11 @@ function App() {
         tariSwapPoolFunctions as TemplateDef,
         "d7032a35cac0a7c4c8dafa4dc0bd76c54b3ceb842540d16c77450f5b6fc5111f",
       );
-      const walletReader = new TemplateReader(
-        walletFunctions as TemplateDef,
-        "0000000000000000000000000000000000000000000000000000000000000000",
-      );
-      addCallNodes(
-        [
-          ...tariSwapPoolReader.getCallNodes(["add_liquidity", "swap", "remove_liquidity", "new"]),
-          ...walletReader.getCallNodes(["create"]),
-        ],
-        0,
-        0,
-      );
+      const [data] = tariSwapPoolReader.getCallNodes(["add_liquidity"]);
+      addNodeAt({ type: NodeType.CallNode, data });
       added.current = true;
     }
-  }, [addCallNodes]);
+  }, [addNodeAt]);
   return (
     <>
       <QueryBuilder theme="dark" />

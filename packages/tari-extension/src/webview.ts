@@ -24,7 +24,7 @@ export function prepareWebviewHtml(
 
   //const csp = `default-src 'none'; font-src ${cspSource}; style-src ${cspSource}; script-src 'nonce-${nonce}';`;
   // TODO: make this CSP more restrictive
-  const csp = `default-src *`;
+  const csp = `default-src *; style-src * 'unsafe-inline'`;
   const cspMetaTag = `<meta http-equiv="Content-Security-Policy" content="${csp}">`;
   updatedHtml = updatedHtml.replace(/<head>/i, (match) => `${match}\n${cspMetaTag}`);
 
