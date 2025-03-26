@@ -48,7 +48,7 @@ function JsonOutlineTree({ items, onSelect, onAction, onDrag }: JsonOutlineProps
     },
     [treeNodes],
   );
-  
+
   const handleDragStart = useCallback(
     (event: DragEvent, item: JsonOutlineItem) => {
       if (event.dataTransfer && onDrag) {

@@ -17,7 +17,8 @@
     "watch": "tsc --watch",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint .",
-    "format": "prettier --check ."
+    "format": "prettier --check .",
+    "format:fix": "prettier --write ."
   },
   "author": "",
   "license": "ISC",

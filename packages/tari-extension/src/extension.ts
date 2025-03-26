@@ -130,7 +130,6 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
   );
-
 }
 
 function fetchConfiguration(): TariConfiguration {

@@ -1,5 +1,10 @@
-import { CallNodeData } from "@/store/types";
+import { CALL_NODE_RETURN } from "@/components/query-builder/nodes/call-node.types";
+import { GenericNodeType, NodeType, QueryBuilderState } from "@/store/types";
 import { TemplateDef } from "@tari-project/typescript-bindings";
+
+export const COMPONENT_ADDRESS_NAME = "__component_address___";
+
+type GenericNodeDescription = Parameters<QueryBuilderState["addNodeAt"]>[0];
 
 export class TemplateReader {
   constructor(
@@ -11,16 +16,54 @@ export class TemplateReader {
     return this.templateDef.V1.template_name;
   }
 
-  public getCallNodes(functionNames: string[]): CallNodeData[] {
-    return functionNames.flatMap((name) => {
-      const fnDef = this.templateDef.V1.functions.find((f) => f.name === name);
-      if (!fnDef?.arguments.length) {
-        return [];
+  public getGenericNode(functionName: string): GenericNodeDescription | null {
+    const fn = this.templateDef.V1.functions.find((f) => f.name === functionName);
+    if (!fn) {
+      return null;
+    }
+    const args = fn.arguments;
+    if (!args.length) {
+      return null;
+    }
+    const isMethod = args[0].name === "self";
+    const inputs = args.map((arg) => {
+      if (arg.name === "self") {
+        return {
+          hasEnterConnection: true,
+          name: COMPONENT_ADDRESS_NAME,
+          label: "Component Address",
+          type: { Other: { name: "Component" } },
+        };
       }
-      const isMethod = fnDef.arguments[0].name === "self";
-      const fn = isMethod ? { ...fnDef, arguments: fnDef.arguments.filter((arg) => arg.name !== "self") } : fnDef;
-
-      return [{ templateName: this.templateName, templateAddress: this.templateAddress, isMethod, fn }];
+      return {
+        hasEnterConnection: true,
+        name: arg.name,
+        type: arg.arg_type,
+      };
     });
+
+    return {
+      type: NodeType.GenericNode,
+      data: {
+        type: GenericNodeType.CallNode,
+        metadata: {
+          type: GenericNodeType.CallNode,
+          isMethod,
+          templateName: this.templateName,
+          templateAddress: this.templateAddress,
+          fn,
+        },
+        hasEnterConnection: true,
+        hasExitConnection: true,
+        icon: isMethod ? "cube" : "home",
+        badge: this.templateName,
+        title: functionName,
+        inputs,
+        output: {
+          type: fn.output,
+          name: CALL_NODE_RETURN,
+        },
+      },
+    };
   }
 }

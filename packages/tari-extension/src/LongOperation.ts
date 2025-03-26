@@ -12,7 +12,7 @@ export class LongOperation extends (EventEmitter as new () => TypedEmitter<Emitt
     message?: string;
     increment?: number;
   }>;
-  
+
   constructor(
     private title: string,
     private cancellable: boolean,
@@ -29,11 +29,11 @@ export class LongOperation extends (EventEmitter as new () => TypedEmitter<Emitt
       },
       (progress, token) => {
         this.progress = progress;
-        
+
         token.onCancellationRequested(() => {
           this.emit("stop", true);
         });
-        
+
         return new Promise<boolean>((resolve) => {
           this.on("stop", (cancelled) => {
             resolve(cancelled);

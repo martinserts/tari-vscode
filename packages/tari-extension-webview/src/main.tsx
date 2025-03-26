@@ -39,5 +39,5 @@ function registerMessenger() {
     const setConfiguration = useTariStore((state) => state.setConfiguration);
     setConfiguration(configuration);
     return Promise.resolve(undefined);
-  });  
+  });
 }

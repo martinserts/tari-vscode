@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDebounce } from "use-debounce";
-import { NodeType, QueryBuilder, TemplateReader, useStore } from "tari-extension-query-builder";
+import { QueryBuilder, TemplateReader, useStore } from "tari-extension-query-builder";
 import { Messenger, TariFlowMessages, TariFlowNodeDetails, Theme } from "tari-extension-common";
 
 import "tari-extension-query-builder/dist/tari-extension-query-builder.css";
@@ -24,8 +24,10 @@ function App({ messenger }: AppProps) {
   const addNodesToCenter = useCallback(
     (details: TariFlowNodeDetails) => {
       const reader = new TemplateReader(details.template as TemplateDef, details.templateAddress);
-      const [data] = reader.getCallNodes([details.functionName]);
-      addNodeAt({ type: NodeType.CallNode, data });
+      const nodeData = reader.getGenericNode(details.functionName);
+      if (nodeData) {
+        addNodeAt(nodeData);
+      }
     },
     [addNodeAt],
   );

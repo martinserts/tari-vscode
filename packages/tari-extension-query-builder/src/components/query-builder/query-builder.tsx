@@ -1,10 +1,18 @@
-import { ReactFlow, Background, Controls, useViewport, ReactFlowProvider, Viewport, Panel, MiniMap } from "@xyflow/react";
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  useViewport,
+  ReactFlowProvider,
+  Viewport,
+  Panel,
+  MiniMap,
+} from "@xyflow/react";
 import { CALL_NODE_DRAG_DROP_TYPE } from "tari-extension-common";
 import useStore from "../../store/store";
 import { useShallow } from "zustand/shallow";
-import { NodeType, QueryBuilderState } from "@/store/types";
+import { GenericNodeType, NodeType, QueryBuilderState } from "@/store/types";
 import { useCallback, useEffect, useRef, useState } from "react";
-import CallNode from "./nodes/call-node";
 import ButtonEdge from "./edges/button-edge";
 import { TariFlowNodeDetails } from "@/types";
 import { TemplateReader } from "@/query-builder/template-reader";
@@ -22,8 +30,7 @@ import {
 import { Button } from "../ui/button";
 import { CheckCircledIcon, EnterIcon } from "@radix-ui/react-icons";
 import { RocketIcon } from "lucide-react";
-import StartNode from "./nodes/start-node";
-import EmitLogNode from "./nodes/emit-log-node";
+import GenericNode from "./nodes/generic/generic-node";
 
 export type Theme = "dark" | "light";
 
@@ -46,9 +53,7 @@ export interface QueryBuilderProps {
 }
 
 const nodeTypes = {
-  [NodeType.CallNode]: CallNode,
-  [NodeType.StartNode]: StartNode,
-  [NodeType.EmitLogNode]: EmitLogNode,
+  [NodeType.GenericNode]: GenericNode,
 };
 
 const edgeTypes = {
@@ -95,19 +100,86 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
         const flowX = (event.clientX - viewport.x) / viewport.zoom;
         const flowY = (event.clientY - viewport.y) / viewport.zoom;
 
-        const [nodeData] = reader.getCallNodes([json.functionName]);
-        addNodeAt({ type: NodeType.CallNode, data: nodeData }, { x: flowX, y: flowY });
+        const nodeData = reader.getGenericNode(json.functionName);
+        if (nodeData) {
+          addNodeAt(nodeData, { x: flowX, y: flowY });
+        }
       }
     },
     [addNodeAt, viewport],
   );
 
   const handleAddStartNode = useCallback(() => {
-    addNodeAt({ type: NodeType.StartNode, data: {} });
+    addNodeAt({
+      type: NodeType.GenericNode,
+      data: {
+        type: GenericNodeType.StartNode,
+        hasExitConnection: true,
+        icon: "enter",
+        largeCaption: "START",
+      },
+    });
   }, [addNodeAt]);
 
   const handleAddEmitLogNode = useCallback(() => {
-    addNodeAt({ type: NodeType.EmitLogNode, data: {} });
+    addNodeAt({
+      type: NodeType.GenericNode,
+      data: {
+        type: GenericNodeType.EmitLogNode,
+        hasEnterConnection: true,
+        hasExitConnection: true,
+        icon: "rocket",
+        title: "Emit Log",
+        inputs: [
+          {
+            hasEnterConnection: true,
+            name: "log_level",
+            label: "Log Level",
+            type: "String",
+            validValues: ["Error", "Warn", "Info", "Debug"],
+          },
+          {
+            hasEnterConnection: true,
+            name: "message",
+            label: "Message",
+            type: "String",
+          },
+        ],
+      },
+    });
+  }, [addNodeAt]);
+
+  const handleAddAssertBucketContainsNode = useCallback(() => {
+    addNodeAt({
+      type: NodeType.GenericNode,
+      data: {
+        type: GenericNodeType.AssertBucketContains,
+        hasEnterConnection: true,
+        hasExitConnection: true,
+        icon: "check-circled",
+        title: "Assert Bucket Contains",
+        inputs: [
+          {
+            hasEnterConnection: true,
+            name: "key",
+            label: "Key",
+            type: { Vec: "U8" },
+          },
+          {
+            hasEnterConnection: true,
+            name: "resource_address",
+            label: "Resource Address",
+            type: { Other: { name: "ResourceAddress" } },
+          },
+          {
+            hasEnterConnection: true,
+            name: "min_amount",
+            label: "Minimum Amount",
+            type: { Other: { name: "Amount" } },
+          },
+        ],
+      },
+    });
   }, [addNodeAt]);
 
   useEffect(() => {
@@ -190,7 +262,7 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
                 <DropdownMenuItem onSelect={handleAddEmitLogNode}>
                   <RocketIcon /> Emit Log
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleAddAssertBucketContainsNode}>
                   <CheckCircledIcon />
                   Assert Bucket Contains
                 </DropdownMenuItem>
