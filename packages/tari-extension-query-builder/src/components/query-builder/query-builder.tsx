@@ -23,14 +23,30 @@ import "@/xy-theme.css";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { CheckCircledIcon, EnterIcon } from "@radix-ui/react-icons";
+import { CheckCircledIcon, EnterIcon, PlayIcon } from "@radix-ui/react-icons";
 import { RocketIcon } from "lucide-react";
 import GenericNode from "./nodes/generic/generic-node";
+import { ExecutionPlanner } from "@/execute/ExecutionPlanner";
+import { AmbiguousOrderError } from "@/execute/AmbiguousOrderError";
+import { CycleDetectedError } from "@/execute/CycleDetectedError";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 
 export type Theme = "dark" | "light";
 
@@ -45,6 +61,7 @@ const selector = (state: QueryBuilderState) => ({
   isValidConnection: state.isValidConnection,
   updateCenter: state.updateCenter,
   addNodeAt: state.addNodeAt,
+  getNodeById: state.getNodeById,
 });
 
 export interface QueryBuilderProps {
@@ -71,9 +88,12 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
     isValidConnection,
     updateCenter,
     addNodeAt,
+    getNodeById,
   } = useStore(useShallow(selector));
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [viewport, setViewport] = useState(useViewport());
+  const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const reactflowRef = useRef<HTMLDivElement>(null);
 
   const onMove = useCallback(
@@ -108,6 +128,37 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
     },
     [addNodeAt, viewport],
   );
+
+  const handleExecute = useCallback(() => {
+    const planner = new ExecutionPlanner(nodes, edges);
+    try {
+      const order = planner.getExecutionOrder();
+      console.log("Execution order:", order);
+    } catch (e) {
+      let errorMessage = "Failed to determine execution order";
+      if (e instanceof AmbiguousOrderError) {
+        const getNodeName = (id: string) => {
+          const node = getNodeById(id);
+          if (!node) {
+            return id;
+          }
+          if (node.data.type === GenericNodeType.StartNode) {
+            return "Start node";
+          }
+          return node.data.title ?? id;
+        };
+        const nodeA = getNodeName(e.nodeA);
+        const nodeB = getNodeName(e.nodeB);
+        if (nodeA && nodeB) {
+          errorMessage = `Ambiguous order between "${nodeA}" and "${nodeB}" operations. Please, add explicit connections.`;
+        }
+      } else if (e instanceof CycleDetectedError) {
+        errorMessage = "Cycle detected! Make sure to eliminate it.";
+      }
+      setErrorMessage(errorMessage);
+      setIsErrorDialogOpen(true);
+    }
+  }, [nodes, edges, getNodeById]);
 
   const handleAddStartNode = useCallback(() => {
     addNodeAt({
@@ -222,59 +273,81 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
   }, [dimensions, viewport, updateCenter]);
 
   return (
-    <ReactFlowProvider>
-      <ReactFlow
-        ref={reactflowRef}
-        nodesConnectable={!readOnly}
-        nodesDraggable={!readOnly}
-        nodesFocusable={!readOnly}
-        edgesFocusable={!readOnly}
-        edgesReconnectable={!readOnly}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onMove={onMove}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
-        colorMode={theme}
-        fitView
-        minZoom={0.05}
-        proOptions={{ hideAttribution: true }}
-        defaultEdgeOptions={{
-          type: "buttonEdge",
-        }}
-        isValidConnection={isValidConnection}
-      >
-        <Panel position="top-right" style={{ right: "15px" }}>
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">Add Instruction</Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuGroup>
-                <DropdownMenuItem onSelect={handleAddStartNode}>
-                  <EnterIcon /> Start Node
+    <>
+      <ReactFlowProvider>
+        <ReactFlow
+          ref={reactflowRef}
+          nodesConnectable={!readOnly}
+          nodesDraggable={!readOnly}
+          nodesFocusable={!readOnly}
+          edgesFocusable={!readOnly}
+          edgesReconnectable={!readOnly}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onMove={onMove}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+          colorMode={theme}
+          fitView
+          minZoom={0.05}
+          proOptions={{ hideAttribution: true }}
+          defaultEdgeOptions={{
+            type: "buttonEdge",
+          }}
+          isValidConnection={isValidConnection}
+        >
+          <Panel position="top-right" style={{ right: "15px" }}>
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">...</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuItem onSelect={handleExecute}>
+                  <PlayIcon /> Execute
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={handleAddEmitLogNode}>
-                  <RocketIcon /> Emit Log
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={handleAddAssertBucketContainsNode}>
-                  <CheckCircledIcon />
-                  Assert Bucket Contains
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </Panel>
-        <Background />
-        <Controls />
-        <MiniMap nodeStrokeWidth={3} />
-      </ReactFlow>
-    </ReactFlowProvider>
+                <DropdownMenuSeparator />
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>Add Instruction</DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem onSelect={handleAddStartNode}>
+                        <EnterIcon /> Start Node
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={handleAddEmitLogNode}>
+                        <RocketIcon /> Emit Log
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={handleAddAssertBucketContainsNode}>
+                        <CheckCircledIcon />
+                        Assert Bucket Contains
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </Panel>
+          <Background />
+          <Controls />
+          <MiniMap nodeStrokeWidth={3} />
+        </ReactFlow>
+      </ReactFlowProvider>
+      <AlertDialog open={isErrorDialogOpen} onOpenChange={setIsErrorDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Execution failed</AlertDialogTitle>
+            <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Dismiss</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
