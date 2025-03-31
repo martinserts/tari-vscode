@@ -1,4 +1,4 @@
-import { TariProvider } from "@tari-project/tarijs";
+import { TariSigner } from "@tari-project/tarijs-all";
 import { useCollapsibleToggle } from "../hooks/collapsible-toggle";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTariStore } from "../store/tari-store";
@@ -21,12 +21,12 @@ import { JsonOutline } from "../json-parser/JsonOutline";
 import { TEMPLATE_DETAILS_PARTS } from "../json-parser/known-parts/template-details";
 
 interface TemplateActionsProps {
-  provider: TariProvider;
+  signer: TariSigner;
   open?: boolean;
   onToggle?: (open: boolean) => void;
 }
 
-function TemplateActions({ provider, open, onToggle }: TemplateActionsProps) {
+function TemplateActions({ signer, open, onToggle }: TemplateActionsProps) {
   const newFlowRef = useRef<ve.VscodeIcon | null>(null);
   const messenger = useTariStore((state) => state.messenger);
   const [jsonDocument, setJsonDocument] = useState<JsonDocument | undefined>(undefined);
@@ -90,7 +90,7 @@ function TemplateActions({ provider, open, onToggle }: TemplateActionsProps) {
       if (messenger) {
         setLoading(true);
         try {
-          const details = await provider.getTemplateDefinition(templateAddressToFetch);
+          const details = await signer.getTemplateDefinition(templateAddressToFetch);
           const document = new JsonDocument("Template definition", details);
           setJsonDocument(document);
           const outline = new JsonOutline(document, TEMPLATE_DETAILS_PARTS);
@@ -107,7 +107,7 @@ function TemplateActions({ provider, open, onToggle }: TemplateActionsProps) {
         setLoading(false);
       }
     },
-    [messenger, provider],
+    [messenger, signer],
   );
 
   return (

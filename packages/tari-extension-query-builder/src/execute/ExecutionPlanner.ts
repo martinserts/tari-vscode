@@ -24,7 +24,9 @@ export class ExecutionPlanner {
   constructor(
     private genericNodes: GenericNode[],
     private edges: Edge[],
-  ) {}
+  ) {
+    this.init();
+  }
 
   private adjustIncomingConnectionCount(nodeId: NodeId, delta: number) {
     this.incomingConnectionCount.set(nodeId, (this.incomingConnectionCount.get(nodeId) ?? 0) + delta);
@@ -116,14 +118,11 @@ export class ExecutionPlanner {
   }
 
   public getExecutionOrder(): NodeId[] {
-    this.init();
-
+    const executionOrder: NodeId[] = [];
+    let nodesProcessed = 0;
     const queue: NodeId[] = this.nodes
       .map((node) => node.id)
       .filter((nodeId) => this.incomingConnectionCount.get(nodeId) === 0);
-
-    const executionOrder: NodeId[] = [];
-    let nodesProcessed = 0;
 
     while (queue.length > 0) {
       if (queue.length > 1) {

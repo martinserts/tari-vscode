@@ -13,10 +13,10 @@
     "test": "vitest run src"
   },
   "dependencies": {
-    "@tari-project/tarijs": "catalog:",
+    "@tari-project/tarijs-all": "catalog:",
     "@tari-project/typescript-bindings": "catalog:",
-    "@tari-project/wallet-connect-provider": "catalog:",
-    "@tari-project/wallet-daemon-provider": "catalog:",
+    "@tari-project/wallet-connect-signer": "catalog:",
+    "@tari-project/wallet-daemon-signer": "catalog:",
     "@vscode-elements/elements": "^1.13.1",
     "@vscode-elements/react-elements": "^0.9.0",
     "@vscode/codicons": "^0.0.36",

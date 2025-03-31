@@ -29,6 +29,7 @@ function GenericNode(props: NodeProps<GenericNode>) {
   const readOnly = useStore((store) => store.readOnly);
   const getNodeById = useStore((store) => store.getNodeById);
   const updateNodeArgValue = useStore((store) => store.updateNodeArgValue);
+  const edges = useStore((store) => store.edges);
 
   const outputType = output ? new TariType(output.type) : undefined;
 
@@ -47,6 +48,11 @@ function GenericNode(props: NodeProps<GenericNode>) {
     },
     [id, getNodeById],
   );
+  const hasConnection = useCallback(
+    (handle: string) => edges.some((edge) => edge.target === id && edge.targetHandle === handle),
+    [id, edges],
+  );
+
   const handleOnChange = (argName: string, value: SafeParseReturnType<unknown, unknown>) => {
     updateNodeArgValue(id, argName, value);
   };
@@ -138,6 +144,7 @@ function GenericNode(props: NodeProps<GenericNode>) {
                     type={type.inputType}
                     min={type.min?.toString()}
                     max={type.max?.toString()}
+                    hasIncomingConnection={hasConnection(input.name)}
                     validate={(data) => type.validate(data)}
                     value={getNodeValue(input.name)}
                     onChange={(value) => {

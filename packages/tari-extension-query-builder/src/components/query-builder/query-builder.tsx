@@ -93,7 +93,7 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [viewport, setViewport] = useState(useViewport());
   const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
   const reactflowRef = useRef<HTMLDivElement>(null);
 
   const onMove = useCallback(

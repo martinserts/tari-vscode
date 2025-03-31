@@ -1,4 +1,4 @@
-import { TariProvider } from "@tari-project/tarijs";
+import { TariSigner } from "@tari-project/tarijs-all";
 import { VscodeCollapsible, VscodeDivider, VscodeIcon, VscodeProgressRing } from "@vscode-elements/react-elements";
 import * as ve from "@vscode-elements/elements";
 import { useCollapsibleToggle } from "../hooks/collapsible-toggle";
@@ -11,12 +11,12 @@ import { ACCOUNT_KNOWN_PARTS } from "../json-parser/known-parts/account";
 import { JsonOutlineItem } from "tari-extension-common";
 
 interface AccountActionsProps {
-  provider: TariProvider;
+  signer: TariSigner;
   open?: boolean;
   onToggle?: (open: boolean) => void;
 }
 
-function AccountActions({ provider, open, onToggle }: AccountActionsProps) {
+function AccountActions({ signer, open, onToggle }: AccountActionsProps) {
   const refreshRef = useRef<ve.VscodeIcon | null>(null);
   const messenger = useTariStore((state) => state.messenger);
   const [jsonDocument, setJsonDocument] = useState<JsonDocument | undefined>(undefined);
@@ -53,7 +53,7 @@ function AccountActions({ provider, open, onToggle }: AccountActionsProps) {
     if (messenger) {
       setLoading(true);
       try {
-        const account = await provider.getAccount();
+        const account = await signer.getAccount();
         const document = new JsonDocument("Account", account);
         setJsonDocument(document);
         const outline = new JsonOutline(document, ACCOUNT_KNOWN_PARTS);

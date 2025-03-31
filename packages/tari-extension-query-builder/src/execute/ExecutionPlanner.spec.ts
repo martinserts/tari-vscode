@@ -151,7 +151,6 @@ describe(ExecutionPlanner, () => {
           } catch (error) {
             expect(error).toBeInstanceOf(AmbiguousOrderError);
             if (error instanceof AmbiguousOrderError) {
-              console.log("ERROR", error.message);
               expect(error.nodeA).toBe("A");
               expect(error.nodeB).toBe("C");
             }

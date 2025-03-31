@@ -1,4 +1,4 @@
-import { TariProvider } from "@tari-project/tarijs";
+import { TariSigner } from "@tari-project/tarijs-all";
 import {
   VscodeFormGroup,
   VscodeCollapsible,
@@ -27,13 +27,13 @@ const DEFAULT_LIMIT = 15;
 const DEFAULT_OFFSET = 0;
 
 interface ListSubstatesActionsProps {
-  provider: TariProvider;
+  signer: TariSigner;
   onViewDetails: (item: JsonOutlineItem) => void;
   open?: boolean;
   onToggle?: (open: boolean) => void;
 }
 
-function ListSubstatesActions({ provider, onViewDetails, open, onToggle }: ListSubstatesActionsProps) {
+function ListSubstatesActions({ signer, onViewDetails, open, onToggle }: ListSubstatesActionsProps) {
   const messenger = useTariStore((state) => state.messenger);
   const [jsonDocument, setJsonDocument] = useState<JsonDocument | undefined>(undefined);
   const [outlineItems, setOutlineItems] = useState<JsonOutlineItem[]>([]);
@@ -60,7 +60,13 @@ function ListSubstatesActions({ provider, onViewDetails, open, onToggle }: ListS
     if (messenger) {
       setLoading(true);
       try {
-        const substates = await provider.listSubstates(tempateAddress, subsateType ?? null, limit, offset);
+        const request = {
+          filter_by_template: tempateAddress,
+          filter_by_type: subsateType ?? null,
+          limit,
+          offset,
+        };
+        const substates = await signer.listSubstates(request);
         const document = new JsonDocument("Substates", substates);
         setJsonDocument(document);
         const outline = new JsonOutline(document, SUBSTATE_LIST_PARTS);

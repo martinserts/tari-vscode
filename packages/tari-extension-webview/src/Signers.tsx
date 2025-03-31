@@ -14,9 +14,9 @@ import { useTariStore } from "./store/tari-store";
 import {
   TariPermissions,
   WalletDaemonFetchParameters,
-  WalletDaemonTariProvider,
-} from "@tari-project/wallet-daemon-provider";
-import { WalletConnectTariProvider } from "@tari-project/wallet-connect-provider";
+  WalletDaemonTariSigner,
+} from "@tari-project/wallet-daemon-signer";
+import { WalletConnectTariSigner } from "@tari-project/wallet-connect-signer";
 import { TariConfiguration, TariProviderType } from "tari-extension-common";
 import { useState } from "react";
 import { useCollapsibleToggle } from "./hooks/collapsible-toggle";
@@ -25,16 +25,16 @@ const DEFAULT_WALLET_DAEMON_ADDRESS = "http://127.0.0.1:12010/json_rpc";
 const DEFAULT_TARI_PROJECT_ID = "1825b9dd9c17b5a33063ae91cbc48a6e";
 const PROVIDERS = [TariProviderType.WalletDemon, TariProviderType.WalletConnect];
 
-interface ProvidersProps {
+interface SignersProps {
   configuration: TariConfiguration;
   open?: boolean;
   onToggle?: (open: boolean) => void;
 }
 
-function Providers({ configuration, open, onToggle }: ProvidersProps) {
+function Signers({ configuration, open, onToggle }: SignersProps) {
   const messenger = useTariStore((state) => state.messenger);
-  const provider = useTariStore((state) => state.provider);
-  const setProvider = useTariStore((state) => state.setProvider);
+  const provider = useTariStore((state) => state.signer);
+  const setProvider = useTariStore((state) => state.setSigner);
 
   const [selectedProviderIndex, setSelectedProviderIndex] = useState<number>(
     PROVIDERS.indexOf(configuration.defaultProvider),
@@ -57,13 +57,13 @@ function Providers({ configuration, open, onToggle }: ProvidersProps) {
       permissions,
       serverUrl: walletDaemonAddress || DEFAULT_WALLET_DAEMON_ADDRESS,
     };
-    const walletDaemonProvider = await WalletDaemonTariProvider.buildFetchProvider(params);
+    const walletDaemonProvider = await WalletDaemonTariSigner.buildFetchSigner(params);
     await walletDaemonProvider.getAccount();
     setProvider(walletDaemonProvider);
   };
 
   const handleWalletConnectConnect = async () => {
-    const walletConnectProvider = new WalletConnectTariProvider(walletConnectProjectId || DEFAULT_TARI_PROJECT_ID);
+    const walletConnectProvider = new WalletConnectTariSigner(walletConnectProjectId || DEFAULT_TARI_PROJECT_ID);
     await walletConnectProvider.connect();
     setProvider(walletConnectProvider);
   };
@@ -167,4 +167,4 @@ function Providers({ configuration, open, onToggle }: ProvidersProps) {
   );
 }
 
-export default Providers;
+export default Signers;

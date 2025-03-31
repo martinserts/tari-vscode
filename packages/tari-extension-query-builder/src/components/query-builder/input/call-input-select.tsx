@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 interface CallInputSelectProps extends Omit<CallInputProps, "children"> {
   readOnly?: boolean;
   choices: string[];
+  hasIncomingConnection?: boolean;
   validate?: (data: string) => SafeParseReturnType<unknown, unknown>;
   value?: SafeParseReturnType<unknown, unknown>;
   onChange?: (value: SafeParseReturnType<unknown, unknown>) => void;
@@ -19,12 +20,14 @@ function CallInputSelect({
   label,
   labelWidth,
   choices,
+  hasIncomingConnection,
   validate,
   value,
   onChange,
 }: CallInputSelectProps) {
   const [selectedValue, setSelectedValue] = useState(value?.success ? (value.data as string) : "");
   const errorMessage = !value?.success ? value?.error.errors[0].message : undefined;
+  const isValid = !!hasIncomingConnection || (!errorMessage && selectedValue.length);
 
   const handleChange = (value: string) => {
     setSelectedValue(value);
@@ -35,7 +38,7 @@ function CallInputSelect({
   };
 
   return (
-    <CallInput name={name} label={label} labelWidth={labelWidth}>
+    <CallInput name={name} label={label} labelWidth={labelWidth} invalid={!isValid}>
       <TooltipProvider>
         <Tooltip open={!!errorMessage}>
           <TooltipTrigger asChild>

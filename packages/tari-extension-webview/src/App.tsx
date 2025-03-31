@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTariStore } from "./store/tari-store";
-import Providers from "./Providers";
-import ProviderActions from "./ProviderActions";
+import Signers from "./Signers";
+import SignerActions from "./SignerActions";
 
 if (import.meta.env.DEV) {
   await import("@vscode-elements/webview-playground");
@@ -9,10 +9,10 @@ if (import.meta.env.DEV) {
 
 function App() {
   const messenger = useTariStore((state) => state.messenger);
-  const provider = useTariStore((state) => state.provider);
+  const signer = useTariStore((state) => state.signer);
   const configuration = useTariStore((state) => state.configuration);
   const setConfiguration = useTariStore((state) => state.setConfiguration);
-  const [providersOpen, setProvidersOpen] = useState(true);
+  const [signersOpen, setSignersOpen] = useState(true);
 
   useEffect(() => {
     if (messenger) {
@@ -28,24 +28,24 @@ function App() {
   }, [messenger, setConfiguration]);
 
   useEffect(() => {
-    if (provider) {
-      setProvidersOpen(false);
+    if (signer) {
+      setSignersOpen(false);
     }
-  }, [provider]);
+  }, [signer]);
 
   if (configuration) {
     return (
       <>
         {import.meta.env.DEV ? <vscode-dev-toolbar></vscode-dev-toolbar> : null}
 
-        <Providers
+        <Signers
           configuration={configuration}
-          open={providersOpen}
+          open={signersOpen}
           onToggle={(open) => {
-            setProvidersOpen(open);
+            setSignersOpen(open);
           }}
         />
-        {provider && <ProviderActions provider={provider} />}
+        {signer && <SignerActions signer={signer} />}
       </>
     );
   } else {

@@ -11,6 +11,7 @@ interface CallInputTextProps extends Omit<CallInputProps, "children"> {
   placeHolder?: string;
   min?: string;
   max?: string;
+  hasIncomingConnection?: boolean;
   validate?: (data: string) => SafeParseReturnType<unknown, unknown>;
   value?: SafeParseReturnType<unknown, unknown>;
   onChange?: (value: SafeParseReturnType<unknown, unknown>) => void;
@@ -25,6 +26,7 @@ function CallInputText({
   type,
   min,
   max,
+  hasIncomingConnection,
   validate,
   value,
   onChange,
@@ -32,6 +34,7 @@ function CallInputText({
 }: CallInputTextProps) {
   const [text, setText] = useState(value?.success ? String(value.data) : "");
   const errorMessage = !value?.success ? value?.error.errors[0].message : undefined;
+  const isValid = !!hasIncomingConnection || (!errorMessage && text.length);
 
   const handleOnInput = (event: SyntheticEvent<HTMLInputElement>) => {
     const inputElement = event.target as HTMLInputElement;
@@ -46,7 +49,7 @@ function CallInputText({
   };
 
   return (
-    <CallInput name={name} label={label} labelWidth={labelWidth} rowHeight={rowHeight}>
+    <CallInput name={name} label={label} labelWidth={labelWidth} rowHeight={rowHeight} invalid={!isValid}>
       <TooltipProvider>
         <Tooltip open={!!errorMessage}>
           <TooltipTrigger asChild>

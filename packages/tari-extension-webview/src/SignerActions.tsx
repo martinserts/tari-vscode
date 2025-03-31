@@ -1,4 +1,4 @@
-import { TariProvider } from "@tari-project/tarijs";
+import { TariSigner } from "@tari-project/tarijs-all";
 import { VscodeDivider } from "@vscode-elements/react-elements";
 import AccountActions from "./actions/AccountActions";
 import ListSubstatesActions from "./actions/ListSubstatesActions";
@@ -6,11 +6,11 @@ import SubstateDetailsActions from "./actions/SubstateDetailsActions";
 import { useState } from "react";
 import TemplateActions from "./actions/TemplateActions";
 
-interface ProviderActionsProps {
-  provider: TariProvider;
+interface SignerActionsProps {
+  signer: TariSigner;
 }
 
-function ProviderActions({ provider }: ProviderActionsProps) {
+function SignerActions({ signer }: SignerActionsProps) {
   const [substateId, setSubstateId] = useState<string | undefined>(undefined);
   const [accountsActionsOpen, setAccountsActionsOpen] = useState(false);
   const [listSubstatesActionsOpen, setListSubstatesActionsOpen] = useState(false);
@@ -20,9 +20,9 @@ function ProviderActions({ provider }: ProviderActionsProps) {
   return (
     <>
       <VscodeDivider />
-      <AccountActions provider={provider} open={accountsActionsOpen} onToggle={setAccountsActionsOpen} />
+      <AccountActions signer={signer} open={accountsActionsOpen} onToggle={setAccountsActionsOpen} />
       <ListSubstatesActions
-        provider={provider}
+        signer={signer}
         onViewDetails={(item) => {
           if (item.value) {
             setSubstateId(item.value as string);
@@ -36,14 +36,14 @@ function ProviderActions({ provider }: ProviderActionsProps) {
         onToggle={setListSubstatesActionsOpen}
       />
       <SubstateDetailsActions
-        provider={provider}
+        signer={signer}
         substateId={substateId}
         open={substateDetailsActionsOpen}
         onToggle={setSubstateDetailsActionsOpen}
       />
-      <TemplateActions provider={provider} open={templateActionsOpen} onToggle={setTemplateActionsOpen} />
+      <TemplateActions signer={signer} open={templateActionsOpen} onToggle={setTemplateActionsOpen} />
     </>
   );
 }
 
-export default ProviderActions;
+export default SignerActions;

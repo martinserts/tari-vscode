@@ -1,4 +1,4 @@
-import { TariProvider } from "@tari-project/tarijs";
+import { TariSigner } from "@tari-project/tarijs-all";
 import { useTariStore } from "../store/tari-store";
 import { useCallback, useEffect, useState } from "react";
 import { JsonOutlineItem } from "tari-extension-common";
@@ -20,14 +20,14 @@ import { SUBSTATE_DETAILS_PARTS } from "../json-parser/known-parts/substate-deta
 import { useCollapsibleToggle } from "../hooks/collapsible-toggle";
 
 interface SubstateDetailsActionsProps {
-  provider: TariProvider;
+  signer: TariSigner;
   substateId?: string;
   open?: boolean;
   onToggle?: (open: boolean) => void;
 }
 
 function SubstateDetailsActions({
-  provider,
+  signer,
   substateId: externalSubstateId,
   open,
   onToggle,
@@ -56,7 +56,7 @@ function SubstateDetailsActions({
       if (messenger) {
         setLoading(true);
         try {
-          const details = await provider.getSubstate(substateIdToFetch);
+          const details = await signer.getSubstate(substateIdToFetch);
           const document = new JsonDocument("Substate details", details);
           setJsonDocument(document);
           const outline = new JsonOutline(document, SUBSTATE_DETAILS_PARTS);
@@ -73,7 +73,7 @@ function SubstateDetailsActions({
         setLoading(false);
       }
     },
-    [messenger, provider],
+    [messenger, signer],
   );
 
   useEffect(() => {
