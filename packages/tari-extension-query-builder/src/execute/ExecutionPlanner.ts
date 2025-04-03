@@ -1,9 +1,12 @@
 import { NODE_ENTRY, NODE_EXIT } from "@/components/query-builder/nodes/generic-node.types";
-import { GenericNode } from "@/store/types";
-import { Type } from "@tari-project/typescript-bindings";
+import { GenericNode, GenericNodeType } from "@/store/types";
+import { LogLevel, Type } from "@tari-project/typescript-bindings";
 import { Edge } from "@xyflow/react";
 import { CycleDetectedError } from "./CycleDetectedError";
 import { AmbiguousOrderError } from "./AmbiguousOrderError";
+import { MissingDataError } from "./MissingDataError";
+import { Amount, fromWorkspace, Transaction, TransactionBuilder } from "@tari-project/tarijs-all";
+import { COMPONENT_ADDRESS_NAME } from "@/query-builder/template-reader";
 
 type NodeId = string;
 interface Node {
@@ -165,6 +168,119 @@ export class ExecutionPlanner {
       throw new CycleDetectedError();
     }
 
+    this.validateConnections();
+
     return executionOrder;
+  }
+
+  private validateConnections() {
+    const inputConnections = new Set(this.edges.map((edge) => `${edge.target}:${edge.targetHandle ?? ""}`));
+    const missingConnections = this.genericNodes.flatMap((node) => {
+      const { id, data } = node;
+      const nodeId = data.title ?? id;
+      if (!data.inputs) {
+        return [];
+      }
+      const values = data.values;
+      if (!values) {
+        return [nodeId];
+      }
+      const hasMissingParams = data.inputs.some((input) => {
+        const name = input.name;
+        const value = values[name];
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        const hasValue = value && value.success && (typeof value.data !== "string" || value.data.length);
+        const missing = !hasValue && !inputConnections.has(`${id}:${name}`);
+        return missing;
+      });
+      return hasMissingParams ? [nodeId] : [];
+    });
+    if (missingConnections.length) {
+      throw new MissingDataError(missingConnections);
+    }
+  }
+
+  public buildTransaction(executionOrder: NodeId[], accountAddress: string, fee: Amount): Transaction {
+    const nodes = new Map(this.genericNodes.map((node) => [node.id, node]));
+    const parentEdges = this.edges.filter(
+      (edge) => edge.sourceHandle !== NODE_EXIT && edge.targetHandle !== NODE_ENTRY,
+    );
+    const childToParent = new Map(
+      parentEdges.map((edge) => [`${edge.target}:${edge.targetHandle ?? ""}`, edge.source]),
+    );
+    const connectedParents = new Set(parentEdges.map((edge) => edge.source));
+
+    const builder = new TransactionBuilder();
+    builder.feeTransactionPayFromComponent(accountAddress, fee.getStringValue());
+    for (const nodeId of executionOrder) {
+      const node = nodes.get(nodeId);
+      if (!node) {
+        throw new Error(`Could not find node ${nodeId}`);
+      }
+      const { data } = node;
+      const values = data.values;
+      const allArgs =
+        values && data.inputs
+          ? data.inputs.map((input) => {
+              const parent = childToParent.get(`${nodeId}:${input.name}`);
+              const argValue = parent ? fromWorkspace(parent) : values[input.name].data;
+              return { name: input.name, value: argValue };
+            })
+          : [];
+      const [args, componentAddress] =
+        allArgs.length && allArgs[0].name === COMPONENT_ADDRESS_NAME
+          ? [allArgs.slice(1), allArgs[0].value]
+          : [allArgs, undefined];
+
+      switch (data.type) {
+        case GenericNodeType.CallNode: {
+          const metadata = data.metadata;
+          if (!metadata) {
+            throw new Error(`Missing metadata for node ${nodeId}`);
+          }
+          const argValues = args.map((arg) => arg.value);
+          if (metadata.isMethod) {
+            if (!componentAddress || typeof componentAddress !== "string") {
+              throw new Error(`Component address is not set for node ${nodeId}`);
+            }
+            builder.callMethod(
+              {
+                componentAddress,
+                methodName: metadata.fn.name,
+              },
+              argValues,
+            );
+          } else {
+            builder.callFunction(
+              {
+                templateAddress: metadata.templateAddress,
+                functionName: metadata.fn.name,
+              },
+              argValues,
+            );
+          }
+          break;
+        }
+        case GenericNodeType.EmitLogNode: {
+          builder.addInstruction({
+            EmitLog: {
+              level: args[0].value as LogLevel,
+              message: args[1].value as string,
+            },
+          });
+          break;
+        }
+        case GenericNodeType.AssertBucketContains:
+          // TODO: `Instruction` does not have this instruction yet
+          break;
+      }
+
+      if (data.output && connectedParents.has(nodeId)) {
+        builder.saveVar(nodeId);
+      }
+    }
+
+    const transaction = builder.build();
+    return transaction;
   }
 }

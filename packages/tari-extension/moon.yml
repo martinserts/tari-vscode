@@ -12,8 +12,10 @@ fileGroups:
 tasks:
   build:
     command: "pnpm run build && \
+      rm -rf dist/webview && \
       mkdir -p dist/webview && \
       cp -R ../tari-extension-webview/dist/* dist/webview && \
+      rm -rf dist/query-builder-webview && \
       mkdir -p dist/query-builder-webview && \
       cp -R ../tari-extension-query-builder-webview/dist/* dist/query-builder-webview"
     inputs:

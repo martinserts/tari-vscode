@@ -6,6 +6,7 @@ import { Messenger, TariFlowMessages, TariFlowNodeDetails, Theme } from "tari-ex
 import "tari-extension-query-builder/dist/tari-extension-query-builder.css";
 import "./root.css";
 import { TemplateDef } from "@tari-project/typescript-bindings";
+import { Transaction } from "@tari-project/tarijs-all";
 
 interface AppProps {
   messenger: Messenger<TariFlowMessages> | undefined;
@@ -74,9 +75,38 @@ function App({ messenger }: AppProps) {
     messenger.send("documentChanged", undefined).catch(console.log);
   }, [messenger, changeCounterDebounced]);
 
+  const getTransactionProps = useCallback(async () => {
+    if (!messenger) {
+      throw new Error("Messenger is not ready.");
+    }
+    const result = await messenger.send("getTransactionProps", undefined);
+    return result;
+  }, [messenger]);
+
+  const executeTransaction = useCallback(
+    async (transaction: Transaction, dryRun: boolean) => {
+      if (!messenger) {
+        throw new Error("Messenger is not ready.");
+      }
+      const timeout = 30_000; // 30 seconds
+      const request = {
+        transaction: transaction as unknown as Record<string, unknown>,
+        dryRun,
+      };
+      await messenger.send("executeTransaction", request, timeout);
+      return undefined;
+    },
+    [messenger],
+  );
+
   return (
     <>
-      <QueryBuilder theme={theme} readOnly={!editable} />
+      <QueryBuilder
+        theme={theme}
+        readOnly={!editable}
+        getTransactionProps={getTransactionProps}
+        executeTransaction={executeTransaction}
+      />
     </>
   );
 }

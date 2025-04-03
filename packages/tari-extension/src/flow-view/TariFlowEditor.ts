@@ -1,7 +1,9 @@
 import * as vscode from "vscode";
 import { getHtmlForWebview } from "../webview";
-import { Messenger, TariFlowMessages, TariFlowNodeDetails } from "tari-extension-common";
+import { ExecuteTransactionBaseRequest, Messenger, TariFlowMessages, TariFlowNodeDetails } from "tari-extension-common";
 import { getTheme } from "../theme";
+import { NoSubscriberError, PromiseAggregator } from "../PromiseAggregator";
+import { FlowToTariView } from "../types";
 
 class TariFlowDocument implements vscode.CustomDocument {
   private constructor(
@@ -41,7 +43,10 @@ export class TariFlowEditorProvider implements vscode.CustomEditorProvider<TariF
   >();
   public readonly onDidChangeCustomDocument = this.onDidChangeCustomDocumentEventEmitter.event;
 
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  constructor(
+    private readonly context: vscode.ExtensionContext,
+    private readonly flowToTariView: PromiseAggregator<FlowToTariView>,
+  ) {}
 
   public register(): vscode.Disposable {
     const newFlowDocumentCommand = vscode.commands.registerCommand("tari.flow-document.new", () => {
@@ -128,6 +133,28 @@ export class TariFlowEditorProvider implements vscode.CustomEditorProvider<TariF
         document,
       });
       return Promise.resolve(undefined);
+    });
+    messenger.registerHandler("getTransactionProps", async () => {
+      try {
+        const transactionProps = await this.flowToTariView.invoke("getTransactionProps");
+        return transactionProps;
+      } catch (e) {
+        if (e instanceof NoSubscriberError) {
+          throw new Error("Tari extension is not active. Please, switch to it and connect to your wallet!");
+        }
+        throw e;
+      }
+    });
+    messenger.registerHandler("executeTransaction", async (request: ExecuteTransactionBaseRequest) => {
+      try {
+        await this.flowToTariView.invoke("executeTransaction", request);
+        return undefined;
+      } catch (e) {
+        if (e instanceof NoSubscriberError) {
+          throw new Error("Tari extension is not active. Please, switch to it and connect to your wallet!");
+        }
+        throw e;
+      }
     });
     this.webviews.add(document.uri, webviewPanel, messenger);
 

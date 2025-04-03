@@ -1,10 +1,19 @@
-import { TariConfiguration } from "../configuration/tari-configuration";
+import { TariConfiguration, TariNetwork } from "../configuration/tari-configuration";
 import { JsonOutlineItem } from "../outline";
 
 export interface TariFlowNodeDetails {
   template: Record<string, unknown>;
   templateAddress: string;
   functionName: string;
+}
+
+export interface ExecuteTransactionBaseRequest {
+  transaction: Record<string, unknown>;
+  dryRun: boolean;
+}
+
+export interface ExecuteTransactionRequest extends ExecuteTransactionBaseRequest {
+  network: TariNetwork;
 }
 
 export interface WebViewMessages {
@@ -30,6 +39,10 @@ export interface WebViewMessages {
   };
   setDefaultProvider: {
     request: TariConfiguration["defaultProvider"];
+    response: undefined;
+  };
+  setNetwork: {
+    request: TariConfiguration["network"];
     response: undefined;
   };
   showLongOperation: {
@@ -76,9 +89,24 @@ export interface WebViewMessages {
     request: TariConfiguration;
     response: undefined;
   };
+
+  getAccountAddress: {
+    request: undefined;
+    response: string;
+  };
+
+  executeTransaction: {
+    request: ExecuteTransactionRequest;
+    response: undefined;
+  };
 }
 
 export type Theme = "dark" | "light";
+
+export interface TransactionProps {
+  accountAddress: string;
+  fee: number;
+}
 
 export interface TariFlowMessages {
   /** Tari Flow -> Extension */
@@ -89,6 +117,16 @@ export interface TariFlowMessages {
 
   documentChanged: {
     request: undefined;
+    response: undefined;
+  };
+
+  getTransactionProps: {
+    request: undefined;
+    response: TransactionProps;
+  };
+
+  executeTransaction: {
+    request: ExecuteTransactionBaseRequest;
     response: undefined;
   };
 

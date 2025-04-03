@@ -1,3 +1,5 @@
+import { TimedOutError } from "./TimedOutError";
+
 interface MessageDefinition<RequestType, ResponseType> {
   request: RequestType;
   response: ResponseType;
@@ -15,7 +17,7 @@ interface MessageRequest<K extends ActionName, T extends AllowedActions<K>> {
 
 type SuccessOrFailureReponse<K extends ActionName, T extends AllowedActions<K>> =
   | { success: true; data: T[K]["response"] }
-  | { success: false; exception: Error };
+  | { success: false; exception: string };
 
 interface MessageResponse<K extends ActionName, T extends AllowedActions<K>> {
   correlationId: string;
@@ -27,7 +29,7 @@ export type Message<K extends ActionName, T extends AllowedActions<K>> = Message
 
 // TODO:
 // const DEFAULT_TIMEOUT = 10 * 60 * 1000; // 10 minutes
-const DEFAULT_TIMEOUT = 3 * 1000;
+const DEFAULT_TIMEOUT = 1000;
 
 interface MessengerOptions<T extends AllowedActions<keyof T>> {
   sendMessage: (msg: Message<keyof T, T>) => void;
@@ -53,7 +55,7 @@ export class Messenger<T extends AllowedActions<keyof T>> {
       const timeoutId = setTimeout(
         () => {
           this.pendingRequests.delete(correlationId);
-          reject(new Error("Timed out"));
+          reject(new TimedOutError());
         },
         timeout ?? this.options.requestTimeout ?? DEFAULT_TIMEOUT,
       );
@@ -79,7 +81,7 @@ export class Messenger<T extends AllowedActions<keyof T>> {
         if (msg.response.success) {
           entry.resolve(msg.response.data);
         } else {
-          entry.reject(msg.response.exception);
+          entry.reject(new Error(msg.response.exception));
         }
       }
     } else {
@@ -91,7 +93,8 @@ export class Messenger<T extends AllowedActions<keyof T>> {
         const data = (await handler(msg.data)) ?? null;
         response = { success: true, data };
       } catch (e) {
-        response = { success: false, exception: e as Error };
+        const exception = e instanceof Error ? e.message : String(e);
+        response = { success: false, exception };
       }
 
       this.options.sendMessage({

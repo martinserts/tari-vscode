@@ -13,6 +13,7 @@
     "ladle": "ladle serve"
   },
   "dependencies": {
+    "@tari-project/tarijs-all": "catalog:",
     "@tari-project/typescript-bindings": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

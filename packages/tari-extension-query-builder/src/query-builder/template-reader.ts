@@ -29,7 +29,7 @@ export class TemplateReader {
     const inputs = args.map((arg) => {
       if (arg.name === "self") {
         return {
-          hasEnterConnection: true,
+          hasEnterConnection: false,
           name: COMPONENT_ADDRESS_NAME,
           label: "Component Address",
           type: { Other: { name: "Component" } },

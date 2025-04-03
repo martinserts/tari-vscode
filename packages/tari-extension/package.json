@@ -62,6 +62,32 @@
             "Wallet Daemon",
             "Wallet Connect"
           ]
+        },
+        "tari.minTransactionFee": {
+          "type": "number",
+          "default": 3000,
+          "description": "Minimum Transaction Fee"
+        },
+        "tari.network": {
+          "type": "string",
+          "default": "LocalNet",
+          "description": "Tari network to execute transactions on",
+          "enum": [
+            "MainNet",
+            "StageNet",
+            "NextNet",
+            "LocalNet",
+            "Igor",
+            "Esmeralda"
+          ],
+          "enumDescriptions": [
+            "MainNet",
+            "StageNet",
+            "NextNet",
+            "LocalNet",
+            "Igor",
+            "Esmeralda"
+          ]
         }
       }
     },

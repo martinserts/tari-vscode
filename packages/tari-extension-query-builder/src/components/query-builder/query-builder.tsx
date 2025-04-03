@@ -8,7 +8,7 @@ import {
   Panel,
   MiniMap,
 } from "@xyflow/react";
-import { CALL_NODE_DRAG_DROP_TYPE } from "tari-extension-common";
+import { CALL_NODE_DRAG_DROP_TYPE, TransactionProps } from "tari-extension-common";
 import useStore from "../../store/store";
 import { useShallow } from "zustand/shallow";
 import { GenericNodeType, NodeType, QueryBuilderState } from "@/store/types";
@@ -16,6 +16,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ButtonEdge from "./edges/button-edge";
 import { TariFlowNodeDetails } from "@/types";
 import { TemplateReader } from "@/query-builder/template-reader";
+import { Toaster } from "@/components/ui/sonner";
 
 import "../../index.css";
 import "@xyflow/react/dist/style.css";
@@ -32,8 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { CheckCircledIcon, EnterIcon, PlayIcon } from "@radix-ui/react-icons";
-import { RocketIcon } from "lucide-react";
+import { CheckCircledIcon, EnterIcon, LayersIcon, PlayIcon, RocketIcon } from "@radix-ui/react-icons";
 import GenericNode from "./nodes/generic/generic-node";
 import { ExecutionPlanner } from "@/execute/ExecutionPlanner";
 import { AmbiguousOrderError } from "@/execute/AmbiguousOrderError";
@@ -47,6 +47,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
+import { Amount, Transaction } from "@tari-project/tarijs-all";
+import { MissingDataError } from "@/execute/MissingDataError";
+import { toast } from "sonner";
+import { LoadingSpinner } from "../ui/loading-spinner";
 
 export type Theme = "dark" | "light";
 
@@ -67,6 +71,8 @@ const selector = (state: QueryBuilderState) => ({
 export interface QueryBuilderProps {
   theme: Theme;
   readOnly?: boolean;
+  getTransactionProps?: () => Promise<TransactionProps>;
+  executeTransaction?: (transaction: Transaction, dryRun: boolean) => Promise<void>;
 }
 
 const nodeTypes = {
@@ -77,7 +83,7 @@ const edgeTypes = {
   buttonEdge: ButtonEdge,
 };
 
-function Flow({ theme, readOnly = false }: QueryBuilderProps) {
+function Flow({ theme, readOnly = false, getTransactionProps, executeTransaction }: QueryBuilderProps) {
   const {
     nodes,
     edges,
@@ -92,9 +98,12 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
   } = useStore(useShallow(selector));
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [viewport, setViewport] = useState(useViewport());
+  const [loading, setLoading] = useState(false);
   const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const reactflowRef = useRef<HTMLDivElement>(null);
+
+  const executeEnabled = !!getTransactionProps && !!executeTransaction;
 
   const onMove = useCallback(
     (_event: unknown, viewport: Viewport) => {
@@ -129,36 +138,57 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
     [addNodeAt, viewport],
   );
 
-  const handleExecute = useCallback(() => {
-    const planner = new ExecutionPlanner(nodes, edges);
-    try {
-      const order = planner.getExecutionOrder();
-      console.log("Execution order:", order);
-    } catch (e) {
-      let errorMessage = "Failed to determine execution order";
-      if (e instanceof AmbiguousOrderError) {
-        const getNodeName = (id: string) => {
-          const node = getNodeById(id);
-          if (!node) {
-            return id;
-          }
-          if (node.data.type === GenericNodeType.StartNode) {
-            return "Start node";
-          }
-          return node.data.title ?? id;
-        };
-        const nodeA = getNodeName(e.nodeA);
-        const nodeB = getNodeName(e.nodeB);
-        if (nodeA && nodeB) {
-          errorMessage = `Ambiguous order between "${nodeA}" and "${nodeB}" operations. Please, add explicit connections.`;
-        }
-      } else if (e instanceof CycleDetectedError) {
-        errorMessage = "Cycle detected! Make sure to eliminate it.";
+  const handleExecute = useCallback(
+    async (dryRun: boolean) => {
+      if (!getTransactionProps || !executeTransaction) {
+        return;
       }
-      setErrorMessage(errorMessage);
-      setIsErrorDialogOpen(true);
-    }
-  }, [nodes, edges, getNodeById]);
+
+      const planner = new ExecutionPlanner(nodes, edges);
+      setLoading(true);
+      try {
+        const executionOrder = planner.getExecutionOrder();
+        const { accountAddress, fee } = await getTransactionProps();
+        const transaction = planner.buildTransaction(executionOrder, accountAddress, new Amount(fee));
+        await executeTransaction(transaction, dryRun);
+        toast.success("Transaction executed");
+      } catch (e) {
+        let errorMessage = "Failed to determine execution order";
+        if (e instanceof AmbiguousOrderError) {
+          const getNodeName = (id: string) => {
+            const node = getNodeById(id);
+            if (!node) {
+              return id;
+            }
+            if (node.data.type === GenericNodeType.StartNode) {
+              return "Start node";
+            }
+            return node.data.title ?? id;
+          };
+          const nodeA = getNodeName(e.nodeA);
+          const nodeB = getNodeName(e.nodeB);
+          if (nodeA && nodeB) {
+            errorMessage = `Ambiguous order between "${nodeA}" and "${nodeB}" operations. Please, add explicit connections.`;
+          }
+        } else if (e instanceof CycleDetectedError) {
+          errorMessage = "Cycle detected! Make sure to eliminate it.";
+        } else if (e instanceof MissingDataError) {
+          const node = e.nodes[0];
+          errorMessage =
+            e.nodes.length > 1 ? `Missing data in node "${node}" and other nodes."` : `Missing data in node "${node}"`;
+        } else if (e instanceof Error) {
+          errorMessage = e.message;
+        } else {
+          console.log(e);
+        }
+        setErrorMessage(errorMessage);
+        setIsErrorDialogOpen(true);
+      }
+
+      setLoading(false);
+    },
+    [nodes, edges, getNodeById, getTransactionProps, executeTransaction],
+  );
 
   const handleAddStartNode = useCallback(() => {
     addNodeAt({
@@ -304,11 +334,26 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
           <Panel position="top-right" style={{ right: "15px" }}>
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">...</Button>
+                <Button variant="outline">
+                  {loading ? <LoadingSpinner type="short" className="h-4 w-4 animate-spin" /> : "..."}
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56">
-                <DropdownMenuItem onSelect={handleExecute}>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    handleExecute(false).catch(console.log);
+                  }}
+                  disabled={!executeEnabled}
+                >
                   <PlayIcon /> Execute
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    handleExecute(true).catch(console.log);
+                  }}
+                  disabled={!executeEnabled}
+                >
+                  <LayersIcon /> Execute - Dry Run
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuSub>
@@ -337,7 +382,7 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
         </ReactFlow>
       </ReactFlowProvider>
       <AlertDialog open={isErrorDialogOpen} onOpenChange={setIsErrorDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="border-[var(--foreground)]">
           <AlertDialogHeader>
             <AlertDialogTitle>Execution failed</AlertDialogTitle>
             <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
@@ -351,10 +396,16 @@ function Flow({ theme, readOnly = false }: QueryBuilderProps) {
   );
 }
 
-function QueryBuilder({ theme, readOnly = false }: QueryBuilderProps) {
+function QueryBuilder({ theme, readOnly = false, getTransactionProps, executeTransaction }: QueryBuilderProps) {
   return (
     <ReactFlowProvider>
-      <Flow theme={theme} readOnly={readOnly} />
+      <Flow
+        theme={theme}
+        readOnly={readOnly}
+        getTransactionProps={getTransactionProps}
+        executeTransaction={executeTransaction}
+      />
+      <Toaster />
     </ReactFlowProvider>
   );
 }

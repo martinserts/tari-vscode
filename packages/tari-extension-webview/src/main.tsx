@@ -1,8 +1,16 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
-import { Message, Messenger, WebViewMessages } from "tari-extension-common";
+import { ExecuteTransactionRequest, Message, Messenger, TariNetwork, WebViewMessages } from "tari-extension-common";
 import { useTariStore } from "./store/tari-store.ts";
+import {
+  buildTransactionRequest,
+  Network,
+  TariSigner,
+  Transaction,
+  TransactionResult,
+  TransactionStatus,
+} from "@tari-project/tarijs-all";
 
 registerMessenger();
 const rootElement = document.getElementById("root");
@@ -40,4 +48,73 @@ function registerMessenger() {
     setConfiguration(configuration);
     return Promise.resolve(undefined);
   });
+
+  messenger.registerHandler("getAccountAddress", () => {
+    const accountData = useTariStore.getState().accountData;
+    return accountData ? Promise.resolve(accountData.address) : Promise.reject(new Error("Please, connect first!"));
+  });
+
+  messenger.registerHandler("executeTransaction", async (request: ExecuteTransactionRequest) => {
+    const { accountData, signer, closeAllActions, setTransactionExecutionActionsOpen, addTransactionExecution } =
+      useTariStore.getState();
+    if (!signer || !accountData) {
+      throw new Error("Please, connect first!");
+    }
+
+    closeAllActions();
+    setTransactionExecutionActionsOpen(true);
+
+    const isDryRun = request.dryRun;
+    const inputRefs = undefined; // Obsolete
+    const submitTransactionRequest = buildTransactionRequest(
+      request.transaction as unknown as Transaction,
+      accountData.account_id,
+      [],
+      inputRefs,
+      isDryRun,
+      getNetwork(request.network),
+    );
+    const response = await signer.submitTransaction(submitTransactionRequest);
+    const result = await waitForAnyTransactionResult(signer, response.transaction_id);
+    addTransactionExecution(result);
+    return undefined;
+  });
+}
+
+function getNetwork(network: TariNetwork) {
+  switch (network) {
+    case TariNetwork.MainNet:
+      return Network.MainNet;
+    case TariNetwork.StageNet:
+      return Network.StageNet;
+    case TariNetwork.NextNet:
+      return Network.NextNet;
+    case TariNetwork.LocalNet:
+      return Network.LocalNet;
+    case TariNetwork.Igor:
+      return Network.Igor;
+    case TariNetwork.Esmeralda:
+      return Network.Esmeralda;
+  }
+}
+
+export async function waitForAnyTransactionResult(
+  signer: TariSigner,
+  transactionId: string,
+): Promise<TransactionResult> {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  while (true) {
+    const resp = await signer.getTransactionResult(transactionId);
+    const FINALIZED_STATUSES = [
+      TransactionStatus.Accepted,
+      TransactionStatus.Rejected,
+      TransactionStatus.InvalidTransaction,
+      TransactionStatus.OnlyFeeAccepted,
+      TransactionStatus.DryRun,
+    ];
+    if (FINALIZED_STATUSES.includes(resp.status)) {
+      return resp as TransactionResult;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
 }

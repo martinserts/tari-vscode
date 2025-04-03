@@ -10,6 +10,7 @@ export class TariViewProvider<T extends AllowedActions<keyof T>> implements vsco
     private readonly context: vscode.ExtensionContext,
     private readonly extensionUri: vscode.Uri,
     private setupMessenger: (messenger: Messenger<T>) => void,
+    private onDispose: () => void,
   ) {}
 
   public async resolveWebviewView(webviewView: vscode.WebviewView): Promise<void> {
@@ -29,6 +30,15 @@ export class TariViewProvider<T extends AllowedActions<keyof T>> implements vsco
       },
     });
     this.setupMessenger(this.messenger);
+
+    webviewView.onDidDispose(() => {
+      this.onDispose();
+    });
+    // webviewView.onDidChangeVisibility(() => {
+    // if (!webviewView.visible) {
+    // this.onDispose();
+    // }
+    // });
   }
 
   public send<K extends keyof T>(command: K, data: T[K]["request"]): Promise<T[K]["response"]> {

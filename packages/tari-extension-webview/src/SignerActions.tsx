@@ -5,6 +5,23 @@ import ListSubstatesActions from "./actions/ListSubstatesActions";
 import SubstateDetailsActions from "./actions/SubstateDetailsActions";
 import { useState } from "react";
 import TemplateActions from "./actions/TemplateActions";
+import TransactionExecutionActions from "./actions/TransactionExecutionActions";
+import { useTariStore, TariStore, TariStoreAction } from "./store/tari-store";
+import { useShallow } from "zustand/shallow";
+
+const selector = (state: TariStore & TariStoreAction) => ({
+  accountsActionsOpen: state.accountsActionsOpen,
+  listSubstatesActionsOpen: state.listSubstatesActionsOpen,
+  substateDetailsActionsOpen: state.substateDetailsActionsOpen,
+  templateActionsOpen: state.templateActionsOpen,
+  transactionExecutionActionsOpen: state.transactionExecutionActionsOpen,
+  setAccountsActionsOpen: state.setAccountsActionsOpen,
+  setListSubstatesActionsOpen: state.setListSubstatesActionsOpen,
+  setSubstateDetailsActionsOpen: state.setSubstateDetailsActionsOpen,
+  setTemplateActionsOpen: state.setTemplateActionsOpen,
+  setTransactionExecutionActionsOpen: state.setTransactionExecutionActionsOpen,
+  closeAllActions: state.closeAllActions,
+});
 
 interface SignerActionsProps {
   signer: TariSigner;
@@ -12,10 +29,19 @@ interface SignerActionsProps {
 
 function SignerActions({ signer }: SignerActionsProps) {
   const [substateId, setSubstateId] = useState<string | undefined>(undefined);
-  const [accountsActionsOpen, setAccountsActionsOpen] = useState(false);
-  const [listSubstatesActionsOpen, setListSubstatesActionsOpen] = useState(false);
-  const [substateDetailsActionsOpen, setSubstateDetailsActionsOpen] = useState(false);
-  const [templateActionsOpen, setTemplateActionsOpen] = useState(false);
+  const {
+    accountsActionsOpen,
+    listSubstatesActionsOpen,
+    substateDetailsActionsOpen,
+    templateActionsOpen,
+    transactionExecutionActionsOpen,
+    setAccountsActionsOpen,
+    setListSubstatesActionsOpen,
+    setSubstateDetailsActionsOpen,
+    setTemplateActionsOpen,
+    setTransactionExecutionActionsOpen,
+    closeAllActions,
+  } = useTariStore(useShallow(selector));
 
   return (
     <>
@@ -26,9 +52,7 @@ function SignerActions({ signer }: SignerActionsProps) {
         onViewDetails={(item) => {
           if (item.value) {
             setSubstateId(item.value as string);
-            setAccountsActionsOpen(false);
-            setListSubstatesActionsOpen(false);
-            setTemplateActionsOpen(false);
+            closeAllActions();
             setSubstateDetailsActionsOpen(true);
           }
         }}
@@ -42,6 +66,10 @@ function SignerActions({ signer }: SignerActionsProps) {
         onToggle={setSubstateDetailsActionsOpen}
       />
       <TemplateActions signer={signer} open={templateActionsOpen} onToggle={setTemplateActionsOpen} />
+      <TransactionExecutionActions
+        open={transactionExecutionActionsOpen}
+        onToggle={setTransactionExecutionActionsOpen}
+      />
     </>
   );
 }
