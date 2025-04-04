@@ -88,6 +88,11 @@
             "Igor",
             "Esmeralda"
           ]
+        },
+        "tari.maxTransactionExecutionResults": {
+          "type": "number",
+          "default": 5,
+          "description": "Maximum transaction execution results to show"
         }
       }
     },

@@ -18,6 +18,7 @@ export enum TariConfigurationKey {
   DefaultProvider = "defaultProvider",
   MinTransactionFee = "minTransactionFee",
   Network = "network",
+  MaxTransactionExecutionResults = "maxTransactionExecutionResults",
 }
 
 export interface TariConfiguration {
@@ -26,4 +27,5 @@ export interface TariConfiguration {
   [TariConfigurationKey.DefaultProvider]: TariProviderType;
   [TariConfigurationKey.MinTransactionFee]: number;
   [TariConfigurationKey.Network]: TariNetwork;
+  [TariConfigurationKey.MaxTransactionExecutionResults]: number;
 }

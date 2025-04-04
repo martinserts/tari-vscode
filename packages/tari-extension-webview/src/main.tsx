@@ -1,7 +1,14 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
-import { ExecuteTransactionRequest, Message, Messenger, TariNetwork, WebViewMessages } from "tari-extension-common";
+import {
+  ExecuteTransactionRequest,
+  Message,
+  Messenger,
+  TariConfigurationKey,
+  TariNetwork,
+  WebViewMessages,
+} from "tari-extension-common";
 import { useTariStore } from "./store/tari-store.ts";
 import {
   buildTransactionRequest,
@@ -55,8 +62,14 @@ function registerMessenger() {
   });
 
   messenger.registerHandler("executeTransaction", async (request: ExecuteTransactionRequest) => {
-    const { accountData, signer, closeAllActions, setTransactionExecutionActionsOpen, addTransactionExecution } =
-      useTariStore.getState();
+    const {
+      accountData,
+      signer,
+      closeAllActions,
+      setTransactionExecutionActionsOpen,
+      addTransactionExecution,
+      configuration,
+    } = useTariStore.getState();
     if (!signer || !accountData) {
       throw new Error("Please, connect first!");
     }
@@ -76,7 +89,10 @@ function registerMessenger() {
     );
     const response = await signer.submitTransaction(submitTransactionRequest);
     const result = await waitForAnyTransactionResult(signer, response.transaction_id);
-    addTransactionExecution(result);
+    addTransactionExecution(
+      result,
+      configuration ? configuration[TariConfigurationKey.MaxTransactionExecutionResults] : undefined,
+    );
     return undefined;
   });
 }

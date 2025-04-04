@@ -31,7 +31,7 @@ export interface TariStoreAction {
   setConfiguration: (vscode: TariStore["configuration"]) => void;
   setSigner: (vscode: TariStore["signer"]) => void;
   setAccountData: (vscode: TariStore["accountData"]) => void;
-  addTransactionExecution: (result: TransactionResult) => void;
+  addTransactionExecution: (result: TransactionResult, maxResults?: number) => void;
   setAccountsActionsOpen: (vscode: TariStore["accountsActionsOpen"]) => void;
   setListSubstatesActionsOpen: (vscode: TariStore["listSubstatesActionsOpen"]) => void;
   setSubstateDetailsActionsOpen: (vscode: TariStore["substateDetailsActionsOpen"]) => void;
@@ -57,12 +57,12 @@ export const useTariStore = create<TariStore & TariStoreAction>()((set, get) => 
     set(() => ({ accountData }));
   },
   transactionExecutions: [],
-  addTransactionExecution: (result) => {
+  addTransactionExecution: (result, maxResults) => {
     const date = new Date();
     const succeeded = result.status === TransactionStatus.Accepted || result.status === TransactionStatus.DryRun;
     set((state) => {
       const newExecutions = [{ date, succeeded, result }, ...state.transactionExecutions];
-      if (newExecutions.length > MAX_TRANSACTION_EXECUTION_RESULTS) {
+      if (newExecutions.length > (maxResults ?? MAX_TRANSACTION_EXECUTION_RESULTS)) {
         newExecutions.pop();
       }
       return { transactionExecutions: newExecutions };

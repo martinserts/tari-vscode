@@ -198,6 +198,7 @@ function fetchConfiguration(): TariConfiguration {
       TariProviderType.WalletDemon) as TariProviderType,
     minTransactionFee: settings.get<number>(TariConfigurationKey.MinTransactionFee) ?? 3000,
     network: (settings.get<string>(TariConfigurationKey.Network) ?? TariNetwork.LocalNet) as TariNetwork,
+    maxTransactionExecutionResults: settings.get<number>(TariConfigurationKey.MaxTransactionExecutionResults) ?? 5,
   };
 }
 
