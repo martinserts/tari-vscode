@@ -8,13 +8,14 @@ export interface JsonDocumentDetails {
 }
 
 export class ReadOnlyJsonDocumentProvider implements vscode.TextDocumentContentProvider {
+  public static scheme = "readonly-json";
   private documents = new Map<string, JsonDocumentDetails>();
   private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
 
   readonly onDidChange: vscode.Event<vscode.Uri> = this._onDidChange.event;
 
   public static getUriById(id: string): vscode.Uri {
-    return vscode.Uri.parse(`readonly://authority/${id}.json`);
+    return vscode.Uri.parse(`${ReadOnlyJsonDocumentProvider.scheme}://authority/${id}.json`);
   }
 
   public createDocument(details: JsonDocumentDetails): vscode.Uri | null {

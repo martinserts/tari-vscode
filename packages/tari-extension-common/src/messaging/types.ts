@@ -16,6 +16,11 @@ export interface ExecuteTransactionRequest extends ExecuteTransactionBaseRequest
   network: TariNetwork;
 }
 
+export interface ShowGeneratedCodeRequest {
+  code: string;
+  type: GeneratedCodeType;
+}
+
 export interface WebViewMessages {
   /** Webview -> Extension */
   showError: {
@@ -130,6 +135,11 @@ export interface TariFlowMessages {
     response: undefined;
   };
 
+  showGeneratedCode: {
+    request: ShowGeneratedCodeRequest;
+    response: undefined;
+  };
+
   /** Extension -> Tari Flow */
   init: {
     request: {
@@ -154,4 +164,9 @@ export interface TariFlowMessages {
     request: TariFlowNodeDetails;
     response: undefined;
   };
+}
+
+export enum GeneratedCodeType {
+  Typescript = "typescript",
+  Javascript = "javascript",
 }

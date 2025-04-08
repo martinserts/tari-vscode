@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 import { TariViewProvider } from "./main-view/TariViewProvider";
 import {
   ExecuteTransactionBaseRequest,
+  GeneratedCodeType,
+  ShowGeneratedCodeRequest,
   TariConfigurationKey,
   TariNetwork,
   TariProviderType,
@@ -10,10 +12,14 @@ import {
 } from "tari-extension-common";
 import { TariConfiguration } from "tari-extension-common";
 import { LongOperation } from "./LongOperation";
-import { ReadOnlyJsonDocumentProvider } from "./ReadOnlyJsonDocumentProvider";
+import { ReadOnlyJsonDocumentProvider } from "./doc-providers/ReadOnlyJsonDocumentProvider";
 import { TariFlowEditorProvider } from "./flow-view/TariFlowEditor";
 import { PromiseAggregator } from "./PromiseAggregator";
 import { FlowToTariView } from "./types";
+import { ReadOnlyCodeDocumentProvider } from "./doc-providers/ReadOnlyCodeDocumentProvider";
+import { v4 as uuidv4 } from "uuid";
+import { formatCode } from "./format/format-code";
+import { VirtualDocumentProvider } from "./doc-providers/VirtualDocumentProvider";
 
 const CONFIGURATION_ROOT = "tari";
 
@@ -23,19 +29,29 @@ export function activate(context: vscode.ExtensionContext) {
   let longOperation: LongOperation | undefined;
 
   const readonlyDocumentProvider = new ReadOnlyJsonDocumentProvider();
+  const readonlyCodeProvider = new ReadOnlyCodeDocumentProvider();
   context.subscriptions.push(
-    vscode.workspace.registerTextDocumentContentProvider("readonly", readonlyDocumentProvider),
+    vscode.workspace.registerTextDocumentContentProvider(ReadOnlyJsonDocumentProvider.scheme, readonlyDocumentProvider),
   );
   context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider(ReadOnlyCodeDocumentProvider.scheme, readonlyCodeProvider),
+  );
+  const virtualProvider = new VirtualDocumentProvider();
+  vscode.workspace.registerTextDocumentContentProvider(VirtualDocumentProvider.scheme, virtualProvider);
+
+  context.subscriptions.push(
     vscode.workspace.onDidCloseTextDocument((doc) => {
-      if (doc.uri.scheme === "readonly") {
+      if (doc.uri.scheme === ReadOnlyJsonDocumentProvider.scheme) {
         readonlyDocumentProvider.deleteDocument(doc.uri);
+      }
+      if (doc.uri.scheme === ReadOnlyCodeDocumentProvider.scheme) {
+        readonlyCodeProvider.deleteDocument(doc.uri);
       }
     }),
   );
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
-      if (editor && editor.document.uri.scheme === "readonly") {
+      if (editor && editor.document.uri.scheme === ReadOnlyJsonDocumentProvider.scheme) {
         readonlyDocumentProvider.updateDecorations(editor);
       }
     }),
@@ -171,6 +187,18 @@ export function activate(context: vscode.ExtensionContext) {
             throw new Error("Tari extension is not active. Please, switch to it and connect to your wallet!");
           }
           throw e;
+        }
+      });
+      flowToTariView.subscribe("showGeneratedCode", async (request: ShowGeneratedCodeRequest) => {
+        const id = uuidv4();
+        const { code, type } = request;
+        const language = type === GeneratedCodeType.Typescript ? "typescript" : "javascript";
+        const formattedCode = await formatCode(code, type, virtualProvider);
+        const uri = readonlyCodeProvider.createDocument({ id, code: formattedCode, type });
+        if (uri) {
+          const document = await vscode.workspace.openTextDocument(uri);
+          await vscode.languages.setTextDocumentLanguage(document, language);
+          await vscode.window.showTextDocument(document, { preview: false });
         }
       });
     },

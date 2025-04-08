@@ -1,6 +1,12 @@
 import * as vscode from "vscode";
 import { getHtmlForWebview } from "../webview";
-import { ExecuteTransactionBaseRequest, Messenger, TariFlowMessages, TariFlowNodeDetails } from "tari-extension-common";
+import {
+  ExecuteTransactionBaseRequest,
+  Messenger,
+  ShowGeneratedCodeRequest,
+  TariFlowMessages,
+  TariFlowNodeDetails,
+} from "tari-extension-common";
 import { getTheme } from "../theme";
 import { NoSubscriberError, PromiseAggregator } from "../PromiseAggregator";
 import { FlowToTariView } from "../types";
@@ -148,6 +154,17 @@ export class TariFlowEditorProvider implements vscode.CustomEditorProvider<TariF
     messenger.registerHandler("executeTransaction", async (request: ExecuteTransactionBaseRequest) => {
       try {
         await this.flowToTariView.invoke("executeTransaction", request);
+        return undefined;
+      } catch (e) {
+        if (e instanceof NoSubscriberError) {
+          throw new Error("Tari extension is not active. Please, switch to it and connect to your wallet!");
+        }
+        throw e;
+      }
+    });
+    messenger.registerHandler("showGeneratedCode", async (request: ShowGeneratedCodeRequest) => {
+      try {
+        await this.flowToTariView.invoke("showGeneratedCode", request);
         return undefined;
       } catch (e) {
         if (e instanceof NoSubscriberError) {

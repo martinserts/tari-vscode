@@ -8,7 +8,7 @@ import {
   Panel,
   MiniMap,
 } from "@xyflow/react";
-import { CALL_NODE_DRAG_DROP_TYPE, TransactionProps } from "tari-extension-common";
+import { CALL_NODE_DRAG_DROP_TYPE, GeneratedCodeType, TransactionProps } from "tari-extension-common";
 import useStore from "../../store/store";
 import { useShallow } from "zustand/shallow";
 import { GenericNodeType, NodeType, QueryBuilderState } from "@/store/types";
@@ -51,6 +51,7 @@ import { Amount, Transaction } from "@tari-project/tarijs-all";
 import { MissingDataError } from "@/execute/MissingDataError";
 import { toast } from "sonner";
 import { LoadingSpinner } from "../ui/loading-spinner";
+import { BuilderCodegen } from "@/codegen/BuilderCodegen";
 
 export type Theme = "dark" | "light";
 
@@ -73,6 +74,7 @@ export interface QueryBuilderProps {
   readOnly?: boolean;
   getTransactionProps?: () => Promise<TransactionProps>;
   executeTransaction?: (transaction: Transaction, dryRun: boolean) => Promise<void>;
+  showGeneratedCode?: (code: string, type: GeneratedCodeType) => Promise<void>;
 }
 
 const nodeTypes = {
@@ -83,7 +85,13 @@ const edgeTypes = {
   buttonEdge: ButtonEdge,
 };
 
-function Flow({ theme, readOnly = false, getTransactionProps, executeTransaction }: QueryBuilderProps) {
+function Flow({
+  theme,
+  readOnly = false,
+  getTransactionProps,
+  executeTransaction,
+  showGeneratedCode,
+}: QueryBuilderProps) {
   const {
     nodes,
     edges,
@@ -104,6 +112,7 @@ function Flow({ theme, readOnly = false, getTransactionProps, executeTransaction
   const reactflowRef = useRef<HTMLDivElement>(null);
 
   const executeEnabled = !!getTransactionProps && !!executeTransaction;
+  const generateCodeEnabled = !!getTransactionProps && !!showGeneratedCode;
 
   const onMove = useCallback(
     (_event: unknown, viewport: Viewport) => {
@@ -138,20 +147,14 @@ function Flow({ theme, readOnly = false, getTransactionProps, executeTransaction
     [addNodeAt, viewport],
   );
 
-  const handleExecute = useCallback(
-    async (dryRun: boolean) => {
-      if (!getTransactionProps || !executeTransaction) {
-        return;
-      }
-
+  const buildTransactionDescriptions = useCallback(
+    async (getTransactionProps: () => Promise<TransactionProps>) => {
       const planner = new ExecutionPlanner(nodes, edges);
-      setLoading(true);
       try {
         const executionOrder = planner.getExecutionOrder();
         const { accountAddress, fee } = await getTransactionProps();
-        const transaction = planner.buildTransaction(executionOrder, accountAddress, new Amount(fee));
-        await executeTransaction(transaction, dryRun);
-        toast.success("Transaction executed");
+        const descriptions = planner.buildTransactionDescription(executionOrder, accountAddress, new Amount(fee));
+        return { planner, descriptions };
       } catch (e) {
         let errorMessage = "Failed to determine execution order";
         if (e instanceof AmbiguousOrderError) {
@@ -181,13 +184,56 @@ function Flow({ theme, readOnly = false, getTransactionProps, executeTransaction
         } else {
           console.log(e);
         }
-        setErrorMessage(errorMessage);
-        setIsErrorDialogOpen(true);
+        throw new Error(errorMessage);
+      }
+    },
+    [nodes, edges, getNodeById],
+  );
+
+  const handleExecute = useCallback(
+    async (dryRun: boolean) => {
+      if (!getTransactionProps || !executeTransaction) {
+        return;
       }
 
+      setLoading(true);
+      try {
+        const { planner, descriptions } = await buildTransactionDescriptions(getTransactionProps);
+        const transaction = planner.buildTransaction(descriptions);
+        await executeTransaction(transaction, dryRun);
+        toast.success("Transaction executed");
+      } catch (e) {
+        if (e instanceof Error) {
+          setErrorMessage(e.message);
+          setIsErrorDialogOpen(true);
+        }
+      }
       setLoading(false);
     },
-    [nodes, edges, getNodeById, getTransactionProps, executeTransaction],
+    [getTransactionProps, executeTransaction, buildTransactionDescriptions],
+  );
+
+  const handleGenerateCode = useCallback(
+    async (typescript: boolean) => {
+      if (!getTransactionProps || !showGeneratedCode) {
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const { descriptions } = await buildTransactionDescriptions(getTransactionProps);
+        const codegen = new BuilderCodegen(descriptions);
+        const code = typescript ? codegen.generateTypescriptCode() : codegen.generateJavascriptCode();
+        await showGeneratedCode(code, typescript ? GeneratedCodeType.Typescript : GeneratedCodeType.Javascript);
+      } catch (e) {
+        if (e instanceof Error) {
+          setErrorMessage(e.message);
+          setIsErrorDialogOpen(true);
+        }
+      }
+      setLoading(false);
+    },
+    [getTransactionProps, showGeneratedCode, buildTransactionDescriptions],
   );
 
   const handleAddStartNode = useCallback(() => {
@@ -357,6 +403,27 @@ function Flow({ theme, readOnly = false, getTransactionProps, executeTransaction
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuSub>
+                  <DropdownMenuSubTrigger hidden={!generateCodeEnabled}>Generate Code</DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          handleGenerateCode(true).catch(console.log);
+                        }}
+                      >
+                        TypeScript
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          handleGenerateCode(false).catch(console.log);
+                        }}
+                      >
+                        JavaScript
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                <DropdownMenuSub>
                   <DropdownMenuSubTrigger>Add Instruction</DropdownMenuSubTrigger>
                   <DropdownMenuPortal>
                     <DropdownMenuSubContent>
@@ -396,7 +463,13 @@ function Flow({ theme, readOnly = false, getTransactionProps, executeTransaction
   );
 }
 
-function QueryBuilder({ theme, readOnly = false, getTransactionProps, executeTransaction }: QueryBuilderProps) {
+function QueryBuilder({
+  theme,
+  readOnly = false,
+  getTransactionProps,
+  executeTransaction,
+  showGeneratedCode,
+}: QueryBuilderProps) {
   return (
     <ReactFlowProvider>
       <Flow
@@ -404,6 +477,7 @@ function QueryBuilder({ theme, readOnly = false, getTransactionProps, executeTra
         readOnly={readOnly}
         getTransactionProps={getTransactionProps}
         executeTransaction={executeTransaction}
+        showGeneratedCode={showGeneratedCode}
       />
       <Toaster />
     </ReactFlowProvider>

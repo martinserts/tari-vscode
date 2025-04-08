@@ -7,6 +7,7 @@ import { AmbiguousOrderError } from "./AmbiguousOrderError";
 import { MissingDataError } from "./MissingDataError";
 import { Amount, fromWorkspace, Transaction, TransactionBuilder } from "@tari-project/tarijs-all";
 import { COMPONENT_ADDRESS_NAME } from "@/query-builder/template-reader";
+import { ArgValue, TransactionDescription } from "./types";
 
 type NodeId = string;
 interface Node {
@@ -200,7 +201,11 @@ export class ExecutionPlanner {
     }
   }
 
-  public buildTransaction(executionOrder: NodeId[], accountAddress: string, fee: Amount): Transaction {
+  public buildTransactionDescription(
+    executionOrder: NodeId[],
+    accountAddress: string,
+    fee: Amount,
+  ): TransactionDescription[] {
     const nodes = new Map(this.genericNodes.map((node) => [node.id, node]));
     const parentEdges = this.edges.filter(
       (edge) => edge.sourceHandle !== NODE_EXIT && edge.targetHandle !== NODE_ENTRY,
@@ -210,8 +215,11 @@ export class ExecutionPlanner {
     );
     const connectedParents = new Set(parentEdges.map((edge) => edge.source));
 
-    const builder = new TransactionBuilder();
-    builder.feeTransactionPayFromComponent(accountAddress, fee.getStringValue());
+    const descriptions: TransactionDescription[] = [];
+    descriptions.push({
+      type: "feeTransactionPayFromComponent",
+      args: [accountAddress, fee.getStringValue()],
+    });
     for (const nodeId of executionOrder) {
       const node = nodes.get(nodeId);
       if (!node) {
@@ -223,13 +231,18 @@ export class ExecutionPlanner {
         values && data.inputs
           ? data.inputs.map((input) => {
               const parent = childToParent.get(`${nodeId}:${input.name}`);
-              const argValue = parent ? fromWorkspace(parent) : values[input.name].data;
+              const argValue: ArgValue = parent
+                ? { type: "workspace", value: parent }
+                : {
+                    type: "other",
+                    value: values[input.name].data,
+                  };
               return { name: input.name, value: argValue };
             })
           : [];
       const [args, componentAddress] =
         allArgs.length && allArgs[0].name === COMPONENT_ADDRESS_NAME
-          ? [allArgs.slice(1), allArgs[0].value]
+          ? [allArgs.slice(1), allArgs[0].value.value]
           : [allArgs, undefined];
 
       switch (data.type) {
@@ -243,30 +256,37 @@ export class ExecutionPlanner {
             if (!componentAddress || typeof componentAddress !== "string") {
               throw new Error(`Component address is not set for node ${nodeId}`);
             }
-            builder.callMethod(
-              {
+            descriptions.push({
+              type: "callMethod",
+              method: {
                 componentAddress,
                 methodName: metadata.fn.name,
               },
-              argValues,
-            );
+              args: argValues,
+            });
           } else {
-            builder.callFunction(
-              {
+            descriptions.push({
+              type: "callFunction",
+              function: {
                 templateAddress: metadata.templateAddress,
                 functionName: metadata.fn.name,
               },
-              argValues,
-            );
+              args: argValues,
+            });
           }
           break;
         }
         case GenericNodeType.EmitLogNode: {
-          builder.addInstruction({
-            EmitLog: {
-              level: args[0].value as LogLevel,
-              message: args[1].value as string,
-            },
+          descriptions.push({
+            type: "addInstruction",
+            args: [
+              {
+                EmitLog: {
+                  level: args[0].value.value as LogLevel,
+                  message: args[1].value.value as string,
+                },
+              },
+            ],
           });
           break;
         }
@@ -276,11 +296,45 @@ export class ExecutionPlanner {
       }
 
       if (data.output && connectedParents.has(nodeId)) {
-        builder.saveVar(nodeId);
+        descriptions.push({
+          type: "saveVar",
+          key: nodeId,
+        });
       }
     }
 
-    const transaction = builder.build();
-    return transaction;
+    return descriptions;
   }
+
+  public buildTransaction(descriptions: TransactionDescription[]): Transaction {
+    const builder = new TransactionBuilder();
+    for (const description of descriptions) {
+      switch (description.type) {
+        case "feeTransactionPayFromComponent":
+          builder.feeTransactionPayFromComponent(...description.args);
+          break;
+        case "callMethod":
+          builder.callMethod(description.method, unwrapArgValues(description.args));
+          break;
+        case "callFunction":
+          builder.callFunction(description.function, unwrapArgValues(description.args));
+          break;
+        case "addInstruction":
+          builder.addInstruction(...description.args);
+          break;
+        case "saveVar":
+          builder.saveVar(description.key);
+          break;
+      }
+    }
+    return builder.build();
+  }
+}
+
+function unwrapArgValue(arg: ArgValue): unknown {
+  return arg.type === "workspace" ? fromWorkspace(arg.value) : arg.value;
+}
+
+function unwrapArgValues(args: ArgValue[]): unknown[] {
+  return args.map(unwrapArgValue);
 }

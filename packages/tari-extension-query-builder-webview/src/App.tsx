@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDebounce } from "use-debounce";
 import { QueryBuilder, TemplateReader, useStore } from "tari-extension-query-builder";
-import { Messenger, TariFlowMessages, TariFlowNodeDetails, Theme } from "tari-extension-common";
+import { GeneratedCodeType, Messenger, TariFlowMessages, TariFlowNodeDetails, Theme } from "tari-extension-common";
 
 import "tari-extension-query-builder/dist/tari-extension-query-builder.css";
 import "./root.css";
@@ -99,6 +99,25 @@ function App({ messenger }: AppProps) {
     [messenger],
   );
 
+  const showGeneratedCode = useCallback(
+    async (code: string, type: GeneratedCodeType) => {
+      if (!messenger) {
+        throw new Error("Messenger is not ready.");
+      }
+      const timeout = 2_000; // 2 seconds
+      await messenger.send(
+        "showGeneratedCode",
+        {
+          code,
+          type,
+        },
+        timeout,
+      );
+      return undefined;
+    },
+    [messenger],
+  );
+
   return (
     <>
       <QueryBuilder
@@ -106,6 +125,7 @@ function App({ messenger }: AppProps) {
         readOnly={!editable}
         getTransactionProps={getTransactionProps}
         executeTransaction={executeTransaction}
+        showGeneratedCode={showGeneratedCode}
       />
     </>
   );
