@@ -1,6 +1,6 @@
 import { TariSigner } from "@tari-project/tarijs-all";
 import { useTariStore } from "../store/tari-store";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { JsonOutlineItem } from "tari-extension-common";
 import { JsonDocument } from "../json-parser/JsonDocument";
 import {
@@ -18,6 +18,7 @@ import JsonOutlineTree from "../components/JsonOutlineTree";
 import { JsonOutline } from "../json-parser/JsonOutline";
 import { SUBSTATE_DETAILS_PARTS } from "../json-parser/known-parts/substate-details";
 import { useCollapsibleToggle } from "../hooks/collapsible-toggle";
+import { useEnterKey } from "../hooks/textfield-enter";
 
 interface SubstateDetailsActionsProps {
   signer: TariSigner;
@@ -37,6 +38,7 @@ function SubstateDetailsActions({
   const [outlineItems, setOutlineItems] = useState<JsonOutlineItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [substateId, setSubstateId] = useState<string | null>(externalSubstateId ?? null);
+  const substateIdRef = useRef<ve.VscodeTextfield>(null);
 
   const collapsibleRef = useCollapsibleToggle(onToggle ?? (() => undefined));
 
@@ -76,6 +78,14 @@ function SubstateDetailsActions({
     [messenger, signer],
   );
 
+  const handleEnterPressed = useCallback(() => {
+    if (substateId) {
+      fetchSubstateDetails(substateId).catch(console.log);
+    }
+  }, [substateId, fetchSubstateDetails]);
+
+  useEnterKey(substateIdRef, handleEnterPressed);
+
   useEffect(() => {
     if (externalSubstateId !== undefined) {
       setSubstateId(externalSubstateId);
@@ -90,6 +100,7 @@ function SubstateDetailsActions({
           <VscodeFormGroup>
             <VscodeLabel htmlFor="substateId">Substate ID</VscodeLabel>
             <VscodeTextfield
+              ref={substateIdRef}
               id="substateId"
               value={substateId ?? ""}
               onInput={(event) => {

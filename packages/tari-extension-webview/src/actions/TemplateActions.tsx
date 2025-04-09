@@ -19,6 +19,7 @@ import { JsonOutlineItem } from "tari-extension-common";
 import { JsonDocument } from "../json-parser/JsonDocument";
 import { JsonOutline } from "../json-parser/JsonOutline";
 import { TEMPLATE_DETAILS_PARTS } from "../json-parser/known-parts/template-details";
+import { useEnterKey } from "../hooks/textfield-enter";
 
 interface TemplateActionsProps {
   signer: TariSigner;
@@ -33,6 +34,7 @@ function TemplateActions({ signer, open, onToggle }: TemplateActionsProps) {
   const [outlineItems, setOutlineItems] = useState<JsonOutlineItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [templateAddress, setTemplateAddress] = useState<string | null>(null);
+  const templateAddressRef = useRef<ve.VscodeTextfield>(null);
 
   const collapsibleRef = useCollapsibleToggle(onToggle ?? (() => undefined));
 
@@ -110,6 +112,14 @@ function TemplateActions({ signer, open, onToggle }: TemplateActionsProps) {
     [messenger, signer],
   );
 
+  const handleEnterPressed = useCallback(() => {
+    if (templateAddress) {
+      fetchTemplateDetails(templateAddress).catch(console.log);
+    }
+  }, [templateAddress, fetchTemplateDetails]);
+
+  useEnterKey(templateAddressRef, handleEnterPressed);
+
   return (
     <>
       <VscodeCollapsible ref={collapsibleRef} open={open ?? false} title="Template Details">
@@ -125,6 +135,7 @@ function TemplateActions({ signer, open, onToggle }: TemplateActionsProps) {
           <VscodeFormGroup>
             <VscodeLabel htmlFor="templateAddress">Template Address</VscodeLabel>
             <VscodeTextfield
+              ref={templateAddressRef}
               id="templateAddress"
               onInput={(event) => {
                 const target = event.target as ve.VscodeTextfield;

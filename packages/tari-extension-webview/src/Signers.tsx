@@ -21,8 +21,9 @@ import {
 } from "@tari-project/wallet-daemon-signer";
 import { WalletConnectTariSigner } from "@tari-project/wallet-connect-signer";
 import { TariConfiguration, TariNetwork, TariProviderType } from "tari-extension-common";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useCollapsibleToggle } from "./hooks/collapsible-toggle";
+import { useEnterKey } from "./hooks/textfield-enter";
 
 const DEFAULT_WALLET_DAEMON_ADDRESS = "http://127.0.0.1:12010/json_rpc";
 const DEFAULT_TARI_PROJECT_ID = "1825b9dd9c17b5a33063ae91cbc48a6e";
@@ -44,9 +45,11 @@ function Signers({ configuration, open, onToggle }: SignersProps) {
     PROVIDERS.indexOf(configuration.defaultProvider),
   );
   const [walletDaemonAddress, setWalletDaemonAddress] = useState<string>(configuration.walletDaemonAddress ?? "");
+  const walletDaemonAddressRef = useRef<ve.VscodeTextfield>(null);
   const [walletConnectProjectId, setWalletConnectProjectId] = useState<string>(
     configuration.walletConnectProjectId ?? "",
   );
+  const walletConnectProjectIdRef = useRef<ve.VscodeTextfield>(null);
   const [network, setNetwork] = useState<string>(configuration.network);
   const [connecting, setConnecting] = useState<boolean>(false);
 
@@ -57,7 +60,7 @@ function Signers({ configuration, open, onToggle }: SignersProps) {
     setSigner(undefined);
   };
 
-  const handleWalletDaemonConnect = async () => {
+  const handleWalletDaemonConnect = useCallback(async () => {
     const permissions = new TariPermissions().addPermission("Admin");
     const params: WalletDaemonFetchParameters = {
       permissions,
@@ -67,17 +70,17 @@ function Signers({ configuration, open, onToggle }: SignersProps) {
     const accountData = await walletDaemonProvider.getAccount();
     setAccountData(accountData);
     setSigner(walletDaemonProvider);
-  };
+  }, [setAccountData, setSigner, walletDaemonAddress]);
 
-  const handleWalletConnectConnect = async () => {
+  const handleWalletConnectConnect = useCallback(async () => {
     const walletConnectProvider = new WalletConnectTariSigner(walletConnectProjectId || DEFAULT_TARI_PROJECT_ID);
     await walletConnectProvider.connect();
     const accountData = await walletConnectProvider.getAccount();
     setAccountData(accountData);
     setSigner(walletConnectProvider);
-  };
+  }, [setAccountData, setSigner, walletConnectProjectId]);
 
-  const handleConnect = async () => {
+  const handleConnect = useCallback(async () => {
     if (messenger) {
       setConnecting(true);
       const longOperation = messenger.send("showLongOperation", { title: "Connecting", cancellable: true });
@@ -107,7 +110,21 @@ function Signers({ configuration, open, onToggle }: SignersProps) {
       await longOperation;
       setConnecting(false);
     }
-  };
+  }, [
+    messenger,
+    selectedProviderIndex,
+    walletDaemonAddress,
+    walletConnectProjectId,
+    handleWalletConnectConnect,
+    handleWalletDaemonConnect,
+  ]);
+
+  const handleEnterPressed = useCallback(() => {
+    handleConnect().catch(console.log);
+  }, [handleConnect]);
+
+  useEnterKey(walletDaemonAddressRef, handleEnterPressed);
+  useEnterKey(walletConnectProjectIdRef, handleEnterPressed);
 
   const handleNetworkChange = (network: string) => {
     setNetwork(network);
@@ -149,6 +166,7 @@ function Signers({ configuration, open, onToggle }: SignersProps) {
             <VscodeFormGroup>
               <VscodeLabel htmlFor="walletDaemonAddress">JSON RPC address</VscodeLabel>
               <VscodeTextfield
+                ref={walletDaemonAddressRef}
                 id="walletDaemonAddress"
                 value={walletDaemonAddress}
                 onInput={(event) => {
@@ -166,6 +184,7 @@ function Signers({ configuration, open, onToggle }: SignersProps) {
             <VscodeFormGroup>
               <VscodeLabel htmlFor="walletConnectProjectId">Project ID</VscodeLabel>
               <VscodeTextfield
+                ref={walletConnectProjectIdRef}
                 id="walletConnectProjectId"
                 value={walletConnectProjectId}
                 onInput={(event) => {
