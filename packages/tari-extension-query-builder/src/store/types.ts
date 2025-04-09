@@ -84,5 +84,3 @@ export interface QueryBuilderState {
   saveStateToString: () => string;
   loadStateFromString: (state: string) => void;
 }
-
-export type PersistedState = Pick<QueryBuilderState, "nodes" | "edges">;
