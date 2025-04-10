@@ -25,7 +25,11 @@ class TariFlowDocument implements vscode.CustomDocument {
 
   private static async readFile(uri: vscode.Uri): Promise<string> {
     if (uri.scheme === "untitled") {
-      return "{}";
+      return JSON.stringify({
+        version: "1.0",
+        nodes: [],
+        edges: [],
+      });
     }
     const data = await vscode.workspace.fs.readFile(uri);
     return new TextDecoder().decode(data);
