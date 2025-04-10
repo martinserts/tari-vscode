@@ -239,18 +239,7 @@ export class TariFlowEditorProvider implements vscode.CustomEditorProvider<TariF
 
     const { messenger } = entries[0];
     await TariFlowEditorProvider.initDocument(document, messenger);
-    this.onDidChangeCustomDocumentEventEmitter.fire({
-      document,
-      label: "Save",
-      undo: () => {
-        // Implement your undo logic here if you decide to add it
-        console.log("Undo not implemented3");
-      },
-      redo: () => {
-        // Implement your redo logic here if you decide to add it
-        console.log("Redo not implemented3");
-      },
-    });
+    this.fireDocumentChangeEvent(document, "Revert");
   }
 
   public async backupCustomDocument(
