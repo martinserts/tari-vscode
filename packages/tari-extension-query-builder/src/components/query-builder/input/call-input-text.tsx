@@ -4,8 +4,9 @@ import { ChangeEvent, HTMLInputTypeAttribute, SyntheticEvent, useState } from "r
 import { SafeParseReturnType } from "zod";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@radix-ui/react-tooltip";
 import { cn } from "@/lib/utils";
+import { EditableLabelProps } from "../nodes/input/editable-label";
 
-interface CallInputTextProps extends Omit<CallInputProps, "children"> {
+type CallInputTextProps = {
   readOnly?: boolean;
   type?: HTMLInputTypeAttribute;
   placeHolder?: string;
@@ -15,7 +16,8 @@ interface CallInputTextProps extends Omit<CallInputProps, "children"> {
   validate?: (data: string) => SafeParseReturnType<unknown, unknown>;
   value?: SafeParseReturnType<unknown, unknown>;
   onChange?: (value: SafeParseReturnType<unknown, unknown>) => void;
-}
+} & Omit<CallInputProps, "children"> &
+  Omit<EditableLabelProps, "initialLabel">;
 
 function CallInputText({
   readOnly = false,
@@ -31,6 +33,9 @@ function CallInputText({
   value,
   onChange,
   rowHeight,
+  isValidLabel,
+  onLabelChange,
+  onRemove,
 }: CallInputTextProps) {
   const [text, setText] = useState(value?.success ? String(value.data) : "");
   const errorMessage = !value?.success ? value?.error.errors[0].message : undefined;
@@ -49,7 +54,16 @@ function CallInputText({
   };
 
   return (
-    <CallInput name={name} label={label} labelWidth={labelWidth} rowHeight={rowHeight} invalid={!isValid}>
+    <CallInput
+      name={name}
+      label={label}
+      labelWidth={labelWidth}
+      rowHeight={rowHeight}
+      invalid={!isValid}
+      isValidLabel={isValidLabel}
+      onLabelChange={onLabelChange}
+      onRemove={onRemove}
+    >
       <TooltipProvider>
         <Tooltip open={!!errorMessage}>
           <TooltipTrigger asChild>

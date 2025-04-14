@@ -12,6 +12,7 @@ import { SafeParseReturnType } from "zod";
 
 export enum NodeType {
   GenericNode = "genericNode",
+  InputParamsNode = "inputParamsNode",
 }
 
 export enum GenericNodeType {
@@ -59,7 +60,22 @@ export type GenericNodeData = {
 };
 export type GenericNode = Node<GenericNodeData, NodeType.GenericNode>;
 
-export type CustomNode = GenericNode;
+export interface InputParameterType {
+  id: string;
+  type: Type;
+  name: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+export type InputParamsNodeData = {
+  title: string;
+  values: Record<string, SafeParseReturnType<unknown, unknown>>;
+  inputs: InputParameterType[];
+};
+
+export type InputParamsNode = Node<InputParamsNodeData, NodeType.InputParamsNode>;
+
+export type CustomNode = GenericNode | InputParamsNode;
 
 export interface QueryBuilderState {
   readOnly: boolean;
@@ -83,4 +99,10 @@ export interface QueryBuilderState {
   removeNode: (nodeId: string) => void;
   saveStateToString: () => string;
   loadStateFromString: (state: string) => void;
+  isValidInputParamsTitle: (nodeId: string, title: string) => boolean;
+  updateInputParamsTitle: (nodeId: string, title: string) => void;
+  updateInputParamsNode: (nodeId: string, argName: string, value: SafeParseReturnType<unknown, unknown>) => void;
+  removeInputParam: (nodeId: string, paramId: string) => void;
+  isValidInputParamsName: (nodeId: string, paramId: string, name: string) => boolean;
+  updateInputParamsName: (nodeId: string, paramId: string, newName: string) => void;
 }

@@ -13,6 +13,23 @@ function App() {
 
   useEffect(() => {
     if (!added.current) {
+      addNodeAt({
+        type: NodeType.InputParamsNode,
+        data: {
+          title: "input1",
+          values: {},
+          inputs: [],
+        },
+      });
+      addNodeAt({
+        type: NodeType.InputParamsNode,
+        data: {
+          title: "input2",
+          values: {},
+          inputs: [],
+        },
+      });
+
       const tariSwapPoolReader = new TemplateReader(
         tariSwapPoolFunctions as TemplateDef,
         "d7032a35cac0a7c4c8dafa4dc0bd76c54b3ceb842540d16c77450f5b6fc5111f",

@@ -4,15 +4,17 @@ import { SafeParseReturnType } from "zod";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { EditableLabelProps } from "../nodes/input/editable-label";
 
-interface CallInputSelectProps extends Omit<CallInputProps, "children"> {
+type CallInputSelectProps = {
   readOnly?: boolean;
   choices: string[];
   hasIncomingConnection?: boolean;
   validate?: (data: string) => SafeParseReturnType<unknown, unknown>;
   value?: SafeParseReturnType<unknown, unknown>;
   onChange?: (value: SafeParseReturnType<unknown, unknown>) => void;
-}
+} & Omit<CallInputProps, "children"> &
+  Omit<EditableLabelProps, "initialLabel">;
 
 function CallInputSelect({
   readOnly = false,
@@ -24,6 +26,9 @@ function CallInputSelect({
   validate,
   value,
   onChange,
+  isValidLabel,
+  onLabelChange,
+  onRemove,
 }: CallInputSelectProps) {
   const [selectedValue, setSelectedValue] = useState(value?.success ? (value.data as string) : "");
   const errorMessage = !value?.success ? value?.error.errors[0].message : undefined;
@@ -38,7 +43,15 @@ function CallInputSelect({
   };
 
   return (
-    <CallInput name={name} label={label} labelWidth={labelWidth} invalid={!isValid}>
+    <CallInput
+      name={name}
+      label={label}
+      labelWidth={labelWidth}
+      invalid={!isValid}
+      isValidLabel={isValidLabel}
+      onLabelChange={onLabelChange}
+      onRemove={onRemove}
+    >
       <TooltipProvider>
         <Tooltip open={!!errorMessage}>
           <TooltipTrigger asChild>

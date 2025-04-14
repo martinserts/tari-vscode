@@ -1,5 +1,5 @@
 import { NODE_ENTRY, NODE_EXIT } from "@/components/query-builder/nodes/generic-node.types";
-import { GenericNode, GenericNodeType } from "@/store/types";
+import { CustomNode, GenericNode, GenericNodeType, NodeType } from "@/store/types";
 import { LogLevel, Type } from "@tari-project/typescript-bindings";
 import { Edge } from "@xyflow/react";
 import { CycleDetectedError } from "./CycleDetectedError";
@@ -19,6 +19,7 @@ interface Node {
 }
 
 export class ExecutionPlanner {
+  private genericNodes: GenericNode[] = [];
   private nodes: Node[] = [];
   private nodeMap = new Map<NodeId, Node>();
   private incomingConnectionCount = new Map<NodeId, number>();
@@ -26,7 +27,7 @@ export class ExecutionPlanner {
   private outputToInputDependencies = new Map<NodeId, NodeId[]>();
 
   constructor(
-    private genericNodes: GenericNode[],
+    private customNodes: CustomNode[],
     private edges: Edge[],
   ) {
     this.init();
@@ -102,6 +103,7 @@ export class ExecutionPlanner {
   }
 
   private init() {
+    this.genericNodes = this.customNodes.filter((node) => node.type === NodeType.GenericNode) as GenericNode[];
     this.nodes = this.genericNodes.map((node) => this.mapGenericNode(node));
     this.nodeMap = new Map(this.nodes.map((node) => [node.id, node]));
     this.outputToInputDependencies = new Map();

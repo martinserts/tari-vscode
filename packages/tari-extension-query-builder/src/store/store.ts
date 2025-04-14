@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import { addEdge, applyNodeChanges, applyEdgeChanges } from "@xyflow/react";
 import { v4 as uuidv4 } from "uuid";
-import { CustomNode, type QueryBuilderState } from "./types";
+import { CustomNode, NodeType, type QueryBuilderState } from "./types";
 import { NODE_ENTRY, NODE_EXIT } from "@/components/query-builder/nodes/generic-node.types";
 import { latestVersionHandler, versionHandlers } from "./persistence/handlers";
+import { NEW_INPUT_PARAM } from "@/components/query-builder/nodes/input/constants";
+import { getNextAvailable } from "@/lib/get-next-available";
 
 const DROP_NODE_OFFSET_X = 200;
 const DROP_NODE_OFFSET_Y = 50;
@@ -39,6 +41,56 @@ const useStore = create<QueryBuilderState>((set, get) => ({
   },
   onConnect: (connection) => {
     if (!get().readOnly) {
+      const sourceNode = get().getNodeById(connection.source);
+      const targetNode = get().getNodeById(connection.target);
+      if (!sourceNode || !targetNode) {
+        return;
+      }
+      // Add a new parameter for input node
+      if (
+        sourceNode.type === NodeType.InputParamsNode &&
+        connection.sourceHandle === NEW_INPUT_PARAM &&
+        targetNode.type === NodeType.GenericNode
+      ) {
+        const targetArgument = targetNode.data.inputs?.find((input) => input.name === connection.targetHandle);
+        if (!targetArgument) {
+          return;
+        }
+        const existingInputs = sourceNode.data.inputs.map((input) => input.name);
+        const newInput = {
+          id: uuidv4(),
+          type: targetArgument.type,
+          name: getNextAvailable(targetArgument.name, (name) => !existingInputs.includes(name)),
+        };
+        const updatedInputs = [...sourceNode.data.inputs, newInput];
+        const updatedNode = {
+          ...sourceNode,
+          data: {
+            ...sourceNode.data,
+            inputs: updatedInputs,
+          },
+        };
+        set((state) => ({
+          nodes: state.nodes.map((node) =>
+            node.id === sourceNode.id && node.type === NodeType.InputParamsNode ? updatedNode : node,
+          ),
+        }));
+        set((state) => ({
+          nodes: state.nodes.map((node) =>
+            node.id === sourceNode.id && node.type === NodeType.InputParamsNode ? updatedNode : node,
+          ),
+          edges: addEdge(
+            {
+              ...connection,
+              sourceHandle: newInput.id,
+            },
+            state.edges,
+          ),
+          changeCounter: state.changeCounter + 1,
+        }));
+        return;
+      }
+
       set((state) => ({
         edges: addEdge(connection, state.edges),
         changeCounter: state.changeCounter + 1,
@@ -69,7 +121,7 @@ const useStore = create<QueryBuilderState>((set, get) => ({
     if (!get().readOnly) {
       set((state) => ({
         nodes: state.nodes.map((node) => {
-          if (node.id === nodeId) {
+          if (node.id === nodeId && node.type === NodeType.GenericNode) {
             const updatedValues = {
               ...node.data.values,
               [argName]: value,
@@ -106,29 +158,46 @@ const useStore = create<QueryBuilderState>((set, get) => ({
       return false;
     }
     const target = get().getNodeById(connection.target);
-    if (!target) {
+    if (!target || target.type !== NodeType.GenericNode) {
       return false;
     }
+
+    const targetAlreadyConnected = get().edges.some(
+      (edge) => edge.target === connection.target && edge.targetHandle === connection.targetHandle,
+    );
 
     // It is possible to connect entry with exit, but only once
     if (connection.sourceHandle === NODE_EXIT && connection.targetHandle === NODE_ENTRY) {
       return (
         !get().edges.some(
           (edge) => edge.source === connection.source && edge.sourceHandle === connection.sourceHandle,
-        ) &&
-        !get().edges.some((edge) => edge.target === connection.target && edge.targetHandle === connection.targetHandle)
+        ) && !targetAlreadyConnected
       );
     }
 
     const targetArgument = target.data.inputs?.find((input) => input.name === connection.targetHandle);
-    if (!targetArgument) {
-      return false;
+
+    // Connect new input node parameter
+    if (source.type === NodeType.InputParamsNode && connection.targetHandle !== NODE_ENTRY) {
+      if (targetAlreadyConnected) {
+        return false;
+      }
+      if (connection.sourceHandle === NEW_INPUT_PARAM) {
+        return true;
+      } else {
+        const sourceArgument = source.data.inputs.find((input) => input.name === connection.sourceHandle);
+        return (
+          sourceArgument != null &&
+          targetArgument != null &&
+          JSON.stringify(sourceArgument.type) === JSON.stringify(targetArgument.type)
+        );
+      }
     }
 
-    const alreadyConnected = get().edges.some(
-      (edge) => edge.target === connection.target && edge.targetHandle === connection.targetHandle,
-    );
-    return !alreadyConnected && JSON.stringify(source.data.output?.type) === JSON.stringify(targetArgument.type);
+    if (source.type !== NodeType.GenericNode || !targetArgument) {
+      return false;
+    }
+    return !targetAlreadyConnected && JSON.stringify(source.data.output?.type) === JSON.stringify(targetArgument.type);
   },
   removeNode: (nodeId) => {
     if (!get().readOnly) {
@@ -172,6 +241,121 @@ const useStore = create<QueryBuilderState>((set, get) => ({
       }
     } catch (error) {
       throw new Error(`Failed to load state: ${String(error)}`);
+    }
+  },
+  isValidInputParamsTitle: (nodeId, title) => {
+    if (!title.length || /\s/g.test(title)) {
+      return false;
+    }
+    const titleTaken = get().nodes.some(
+      (node) => node.id !== nodeId && node.type === NodeType.InputParamsNode && node.data.title === title,
+    );
+    return !titleTaken;
+  },
+  updateInputParamsTitle: (nodeId, title) => {
+    if (!get().readOnly) {
+      set((state) => ({
+        nodes: state.nodes.map((node) => {
+          if (node.id === nodeId && node.type === NodeType.InputParamsNode) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                title,
+              },
+            };
+          }
+          return node;
+        }),
+        changeCounter: state.changeCounter + 1,
+      }));
+    }
+  },
+  updateInputParamsNode: (nodeId, argName, value) => {
+    if (!get().readOnly) {
+      set((state) => ({
+        nodes: state.nodes.map((node) => {
+          if (node.id === nodeId && node.type === NodeType.InputParamsNode) {
+            const updatedValues = {
+              ...node.data.values,
+              [argName]: value,
+            };
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                values: updatedValues,
+              },
+            };
+          }
+          return node;
+        }),
+        changeCounter: state.changeCounter + 1,
+      }));
+    }
+  },
+  removeInputParam: (nodeId, paramId) => {
+    if (!get().readOnly) {
+      set((state) => ({
+        nodes: state.nodes.map((node) => {
+          if (node.id === nodeId && node.type === NodeType.InputParamsNode) {
+            const updatedInputs = node.data.inputs.filter((input) => input.id !== paramId);
+            const updatedValues = Object.fromEntries(
+              Object.entries(node.data.values).filter(([key]) => key !== paramId),
+            );
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                inputs: updatedInputs,
+                values: updatedValues,
+              },
+            };
+          }
+          return node;
+        }),
+        edges: state.edges.filter((edge) => edge.source !== nodeId && edge.source !== paramId),
+        changeCounter: state.changeCounter + 1,
+      }));
+    }
+  },
+  isValidInputParamsName: (nodeId, paramId, name) => {
+    if (!name.length || /\s/g.test(name)) {
+      return false;
+    }
+    const node = get().getNodeById(nodeId);
+    if (!node || node.type !== NodeType.InputParamsNode) {
+      return false;
+    }
+
+    const isTaken = node.data.inputs.some((input) => input.id !== paramId && input.name === name);
+    return !isTaken;
+  },
+  updateInputParamsName: (nodeId, paramId, newName) => {
+    if (!get().readOnly) {
+      set((state) => ({
+        nodes: state.nodes.map((node) => {
+          if (node.id === nodeId && node.type === NodeType.InputParamsNode) {
+            const updatedInputs = node.data.inputs.map((input) =>
+              input.id === paramId
+                ? {
+                    ...input,
+                    name: newName,
+                  }
+                : input,
+            );
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                inputs: updatedInputs,
+              },
+            };
+          }
+          return node;
+        }),
+        changeCounter: state.changeCounter + 1,
+      }));
     }
   },
 }));

@@ -3,14 +3,25 @@ import CallInput, { CallInputProps } from "./call-input";
 import { useState } from "react";
 import { SafeParseReturnType } from "zod";
 import { CheckedState } from "@radix-ui/react-checkbox";
+import { EditableLabelProps } from "../nodes/input/editable-label";
 
-interface CallInputCheckboxProps extends Omit<CallInputProps, "children"> {
+type CallInputCheckboxProps = {
   readOnly?: boolean;
   value?: SafeParseReturnType<unknown, unknown>;
   onChange?: (value: SafeParseReturnType<unknown, unknown>) => void;
-}
+} & Omit<CallInputProps, "children"> &
+  Omit<EditableLabelProps, "initialLabel">;
 
-function CallInputCheckbox({ readOnly = false, name, labelWidth, value, onChange }: CallInputCheckboxProps) {
+function CallInputCheckbox({
+  readOnly = false,
+  name,
+  labelWidth,
+  value,
+  onChange,
+  isValidLabel,
+  onLabelChange,
+  onRemove,
+}: CallInputCheckboxProps) {
   const [checked, setChecked] = useState(value?.success ? (value.data as boolean) : false);
 
   const handleChange = (checkedState: CheckedState) => {
@@ -22,7 +33,13 @@ function CallInputCheckbox({ readOnly = false, name, labelWidth, value, onChange
   };
 
   return (
-    <CallInput name={name} labelWidth={labelWidth}>
+    <CallInput
+      name={name}
+      labelWidth={labelWidth}
+      isValidLabel={isValidLabel}
+      onLabelChange={onLabelChange}
+      onRemove={onRemove}
+    >
       <Checkbox
         disabled={readOnly}
         name={name}

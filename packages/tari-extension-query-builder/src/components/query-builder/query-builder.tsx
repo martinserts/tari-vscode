@@ -33,8 +33,9 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { CheckCircledIcon, EnterIcon, LayersIcon, PlayIcon, RocketIcon } from "@radix-ui/react-icons";
+import { CheckCircledIcon, EnterIcon, InputIcon, LayersIcon, PlayIcon, RocketIcon } from "@radix-ui/react-icons";
 import GenericNode from "./nodes/generic/generic-node";
+import InputParamsNode from "./nodes/input/input-params-node";
 import { ExecutionPlanner } from "@/execute/ExecutionPlanner";
 import { AmbiguousOrderError } from "@/execute/AmbiguousOrderError";
 import { CycleDetectedError } from "@/execute/CycleDetectedError";
@@ -52,6 +53,7 @@ import { MissingDataError } from "@/execute/MissingDataError";
 import { toast } from "sonner";
 import { LoadingSpinner } from "../ui/loading-spinner";
 import { BuilderCodegen } from "@/codegen/BuilderCodegen";
+import { getNextAvailable } from "@/lib/get-next-available";
 
 export type Theme = "dark" | "light";
 
@@ -67,6 +69,7 @@ const selector = (state: QueryBuilderState) => ({
   updateCenter: state.updateCenter,
   addNodeAt: state.addNodeAt,
   getNodeById: state.getNodeById,
+  isValidInputParamsTitle: state.isValidInputParamsTitle,
 });
 
 export interface QueryBuilderProps {
@@ -79,6 +82,7 @@ export interface QueryBuilderProps {
 
 const nodeTypes = {
   [NodeType.GenericNode]: GenericNode,
+  [NodeType.InputParamsNode]: InputParamsNode,
 };
 
 const edgeTypes = {
@@ -103,6 +107,7 @@ function Flow({
     updateCenter,
     addNodeAt,
     getNodeById,
+    isValidInputParamsTitle,
   } = useStore(useShallow(selector));
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [viewport, setViewport] = useState(useViewport());
@@ -160,7 +165,7 @@ function Flow({
         if (e instanceof AmbiguousOrderError) {
           const getNodeName = (id: string) => {
             const node = getNodeById(id);
-            if (!node) {
+            if (!node || node.type !== NodeType.GenericNode) {
               return id;
             }
             if (node.data.type === GenericNodeType.StartNode) {
@@ -247,6 +252,18 @@ function Flow({
       },
     });
   }, [addNodeAt]);
+
+  const handleAddInputParamsNode = useCallback(() => {
+    const title = getNextAvailable("input", (title) => isValidInputParamsTitle("", title));
+    addNodeAt({
+      type: NodeType.InputParamsNode,
+      data: {
+        title,
+        values: {},
+        inputs: [],
+      },
+    });
+  }, [addNodeAt, isValidInputParamsTitle]);
 
   const handleAddEmitLogNode = useCallback(() => {
     addNodeAt({
@@ -427,6 +444,9 @@ function Flow({
                   <DropdownMenuSubTrigger>Add Instruction</DropdownMenuSubTrigger>
                   <DropdownMenuPortal>
                     <DropdownMenuSubContent>
+                      <DropdownMenuItem onSelect={handleAddInputParamsNode}>
+                        <InputIcon /> Input Parameters Node
+                      </DropdownMenuItem>
                       <DropdownMenuItem onSelect={handleAddStartNode}>
                         <EnterIcon /> Start Node
                       </DropdownMenuItem>
