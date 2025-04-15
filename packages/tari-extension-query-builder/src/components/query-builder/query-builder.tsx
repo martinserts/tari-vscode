@@ -158,8 +158,8 @@ function Flow({
       try {
         const executionOrder = planner.getExecutionOrder();
         const { accountAddress, fee } = await getTransactionProps();
-        const descriptions = planner.buildTransactionDescription(executionOrder, accountAddress, new Amount(fee));
-        return { planner, descriptions };
+        const details = planner.buildTransactionDescription(executionOrder, accountAddress, new Amount(fee));
+        return { planner, details };
       } catch (e) {
         let errorMessage = "Failed to determine execution order";
         if (e instanceof AmbiguousOrderError) {
@@ -203,8 +203,8 @@ function Flow({
 
       setLoading(true);
       try {
-        const { planner, descriptions } = await buildTransactionDescriptions(getTransactionProps);
-        const transaction = planner.buildTransaction(descriptions);
+        const { planner, details } = await buildTransactionDescriptions(getTransactionProps);
+        const transaction = planner.buildTransaction(details);
         await executeTransaction(transaction, dryRun);
         toast.success("Transaction executed");
       } catch (e) {
@@ -226,8 +226,8 @@ function Flow({
 
       setLoading(true);
       try {
-        const { descriptions } = await buildTransactionDescriptions(getTransactionProps);
-        const codegen = new BuilderCodegen(descriptions);
+        const { details } = await buildTransactionDescriptions(getTransactionProps);
+        const codegen = new BuilderCodegen(details);
         const code = typescript ? codegen.generateTypescriptCode() : codegen.generateJavascriptCode();
         await showGeneratedCode(code, typescript ? GeneratedCodeType.Typescript : GeneratedCodeType.Javascript);
       } catch (e) {

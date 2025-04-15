@@ -1,8 +1,20 @@
+import { InputParameterType } from "@/store/types";
 import { TransactionBuilder } from "@tari-project/tarijs-all";
 
 export interface FeeTransactionPayFromComponentDescription {
   type: "feeTransactionPayFromComponent";
   args: Parameters<TransactionBuilder["feeTransactionPayFromComponent"]>;
+}
+
+export interface InputParamsReference {
+  name: string;
+  inputParam: InputParameterType;
+}
+
+export interface ArgValueFromInputParam {
+  type: "input";
+  value: unknown;
+  reference: InputParamsReference;
 }
 
 export interface ArgValueFromWorkspace {
@@ -15,7 +27,7 @@ export interface ArgValueOther {
   value: unknown;
 }
 
-export type ArgValue = ArgValueFromWorkspace | ArgValueOther;
+export type ArgValue = ArgValueFromInputParam | ArgValueFromWorkspace | ArgValueOther;
 
 export interface CallMethodDescription {
   type: "callMethod";
@@ -31,7 +43,8 @@ export interface CallFunctionDescription {
 
 export interface AddInstructionDescription {
   type: "addInstruction";
-  args: Parameters<TransactionBuilder["addInstruction"]>;
+  name: string;
+  args: ArgValue[];
 }
 
 export interface SaveVarDescription {
@@ -45,3 +58,17 @@ export type TransactionDescription =
   | CallFunctionDescription
   | AddInstructionDescription
   | SaveVarDescription;
+
+export interface InputParameter {
+  type: InputParameterType;
+  value: unknown;
+}
+
+export interface TransactionContext {
+  inputParams: Record<string, InputParameter[]>;
+}
+
+export interface TransactionDetails {
+  context: TransactionContext;
+  descriptions: TransactionDescription[];
+}

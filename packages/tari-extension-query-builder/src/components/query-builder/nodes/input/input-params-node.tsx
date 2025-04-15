@@ -37,18 +37,18 @@ function InputParamsNode(props: NodeProps<InputParamsNode>) {
   };
 
   const getInputNodeValue = useCallback(
-    (name: string) => {
+    (paramId: string) => {
       const node = getNodeById(id);
       if (!node || node.type !== NodeType.InputParamsNode) {
         return undefined;
       }
-      return node.data.values[name];
+      return node.data.values[paramId];
     },
     [id, getNodeById],
   );
 
-  const handleOnChange = (argName: string, value: SafeParseReturnType<unknown, unknown>) => {
-    updateInputParamsNode(id, argName, value);
+  const handleOnChange = (paramId: string, value: SafeParseReturnType<unknown, unknown>) => {
+    updateInputParamsNode(id, paramId, value);
   };
 
   const isValidTitle = (label: string) => {
@@ -121,16 +121,16 @@ function InputParamsNode(props: NodeProps<InputParamsNode>) {
               return (
                 <CallInputText
                   readOnly={readOnly}
-                  key={input.name}
+                  key={input.id}
                   name={input.name}
                   placeHolder={type.prompt}
                   type={type.inputType}
                   min={type.min?.toString()}
                   max={type.max?.toString()}
                   validate={(data) => type.validate(data)}
-                  value={getInputNodeValue(input.name)}
+                  value={getInputNodeValue(input.id)}
                   onChange={(value) => {
-                    handleOnChange(input.name, value);
+                    handleOnChange(input.id, value);
                   }}
                   rowHeight={ROW_HEIGHT_PX}
                   isValidLabel={(label) => isValidLabel(input, label)}
@@ -147,11 +147,11 @@ function InputParamsNode(props: NodeProps<InputParamsNode>) {
               return (
                 <CallInputCheckbox
                   readOnly={readOnly}
-                  key={input.name}
+                  key={input.id}
                   name={input.name}
-                  value={getInputNodeValue(input.name)}
+                  value={getInputNodeValue(input.id)}
                   onChange={(value) => {
-                    handleOnChange(input.name, value);
+                    handleOnChange(input.id, value);
                   }}
                   rowHeight={ROW_HEIGHT_PX}
                   isValidLabel={(label) => isValidLabel(input, label)}

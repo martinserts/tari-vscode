@@ -185,7 +185,7 @@ const useStore = create<QueryBuilderState>((set, get) => ({
       if (connection.sourceHandle === NEW_INPUT_PARAM) {
         return true;
       } else {
-        const sourceArgument = source.data.inputs.find((input) => input.name === connection.sourceHandle);
+        const sourceArgument = source.data.inputs.find((input) => input.id === connection.sourceHandle);
         return (
           sourceArgument != null &&
           targetArgument != null &&
@@ -244,7 +244,7 @@ const useStore = create<QueryBuilderState>((set, get) => ({
     }
   },
   isValidInputParamsTitle: (nodeId, title) => {
-    if (!title.length || /\s/g.test(title)) {
+    if (!title.length || /\s/g.test(title) || !/^[a-zA-Z]/.test(title)) {
       return false;
     }
     const titleTaken = get().nodes.some(
@@ -271,14 +271,14 @@ const useStore = create<QueryBuilderState>((set, get) => ({
       }));
     }
   },
-  updateInputParamsNode: (nodeId, argName, value) => {
+  updateInputParamsNode: (nodeId, paramId, value) => {
     if (!get().readOnly) {
       set((state) => ({
         nodes: state.nodes.map((node) => {
           if (node.id === nodeId && node.type === NodeType.InputParamsNode) {
             const updatedValues = {
               ...node.data.values,
-              [argName]: value,
+              [paramId]: value,
             };
             return {
               ...node,
@@ -320,7 +320,7 @@ const useStore = create<QueryBuilderState>((set, get) => ({
     }
   },
   isValidInputParamsName: (nodeId, paramId, name) => {
-    if (!name.length || /\s/g.test(name)) {
+    if (!name.length || /\s/g.test(name) || !!/^[a-zA-Z]/.test(name)) {
       return false;
     }
     const node = get().getNodeById(nodeId);

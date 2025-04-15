@@ -4,15 +4,18 @@ import {
   CallFunctionDescription,
   CallMethodDescription,
   FeeTransactionPayFromComponentDescription,
+  InputParameter,
   SaveVarDescription,
-  TransactionDescription,
+  TransactionContext,
+  TransactionDetails,
 } from "@/execute/types";
+import { Type } from "@tari-project/typescript-bindings";
 import * as ts from "typescript";
 
 const factory = ts.factory;
 
 export class BuilderCodegen {
-  constructor(private readonly transactionDescriptions: TransactionDescription[]) {}
+  constructor(private readonly details: TransactionDetails) {}
 
   public generateTypescriptCode(): string {
     return this.generateCode(ts.ScriptKind.TS);
@@ -57,13 +60,15 @@ export class BuilderCodegen {
         factory.createStringLiteral("@tari-project/tarijs-all"),
         undefined,
       ),
+      ...addEmptyCommentToFirstNode(buildInterfaces(this.details.context)),
+      ...addEmptyCommentToFirstNode(buildInputVariables(this.details.context)),
       addEmptyComment(
         factory.createFunctionDeclaration(
           undefined,
           undefined,
           factory.createIdentifier("buildTransaction"),
           undefined,
-          [],
+          buildInputArgs(this.details.context),
           factory.createTypeReferenceNode(factory.createIdentifier("Transaction"), undefined),
           factory.createBlock(
             [
@@ -161,7 +166,11 @@ export class BuilderCodegen {
                       undefined,
                       undefined,
                       factory.createCallExpression(factory.createIdentifier("buildTransactionRequest"), undefined, [
-                        factory.createCallExpression(factory.createIdentifier("buildTransaction"), undefined, []),
+                        factory.createCallExpression(
+                          factory.createIdentifier("buildTransaction"),
+                          undefined,
+                          Object.keys(this.details.context.inputParams).map((key) => factory.createIdentifier(key)),
+                        ),
                         factory.createIdentifier("accountId"),
                         factory.createIdentifier("requiredSubstates"),
                         factory.createIdentifier("undefined"),
@@ -205,7 +214,7 @@ export class BuilderCodegen {
   private createStatements(): ts.NodeArray<ts.Statement> {
     const factory = ts.factory;
     return factory.createNodeArray(
-      this.transactionDescriptions.map((description) => {
+      this.details.descriptions.map((description) => {
         switch (description.type) {
           case "feeTransactionPayFromComponent":
             return this.createFeeTransactionPayFromComponent(description);
@@ -237,12 +246,19 @@ export class BuilderCodegen {
 
   private createArgValuesAst(args: ArgValue[]): ts.Expression {
     const expressions = args.map((arg) => {
-      if (arg.type === "workspace") {
-        return factory.createCallExpression(factory.createIdentifier("fromWorkspace"), undefined, [
-          factory.createStringLiteral(arg.value),
-        ]);
+      switch (arg.type) {
+        case "workspace":
+          return factory.createCallExpression(factory.createIdentifier("fromWorkspace"), undefined, [
+            factory.createStringLiteral(arg.value),
+          ]);
+        case "input":
+          return factory.createPropertyAccessExpression(
+            factory.createIdentifier(arg.reference.name),
+            factory.createIdentifier(arg.reference.inputParam.name),
+          );
+        default:
+          return transformObjectToAstArray(arg.value)[0];
       }
-      return transformObjectToAstArray(arg.value)[0];
     });
     return factory.createArrayLiteralExpression(expressions, false);
   }
@@ -274,6 +290,20 @@ export class BuilderCodegen {
   }
 
   private createAddInstruction(description: AddInstructionDescription): ts.Statement {
+    if (description.name !== "EmitLog") {
+      throw new Error(`Unknown instruction: ${description.name}`);
+    }
+    const getArg = (idx: number) => {
+      return description.args[idx].value;
+    };
+
+    const call = {
+      [description.name]: {
+        level: getArg(0),
+        message: getArg(1),
+      },
+    };
+
     return factory.createExpressionStatement(
       factory.createCallExpression(
         factory.createPropertyAccessExpression(
@@ -281,7 +311,7 @@ export class BuilderCodegen {
           factory.createIdentifier("addInstruction"),
         ),
         undefined,
-        transformObjectToAstArray(description.args[0]),
+        transformObjectToAstArray(call),
       ),
     );
   }
@@ -335,9 +365,88 @@ function addEmptyComment<T extends ts.Node>(node: T) {
   return ts.addSyntheticLeadingComment(node, ts.SyntaxKind.SingleLineCommentTrivia, "", true);
 }
 
+function addEmptyCommentToFirstNode<T extends ts.Node>(nodes: T[]) {
+  const [firstNode, ...otherNodes] = nodes;
+  return [addEmptyComment(firstNode), ...otherNodes];
+}
+
 function stripEmptyComments(code: string): string {
   return code
     .split("\n")
     .map((line) => (/^\s*\/\/\s*$/.test(line) ? "" : line))
     .join("\n");
+}
+
+function getInterfaceName(name: string) {
+  if (!name.length) {
+    throw new Error("Empty interface name");
+  }
+  const capitalized = name[0].toUpperCase() + name.substring(1);
+  return `${capitalized}Props`;
+}
+
+function buildInterface(name: string, params: InputParameter[]): ts.InterfaceDeclaration {
+  return factory.createInterfaceDeclaration(
+    [factory.createToken(ts.SyntaxKind.ExportKeyword)],
+    factory.createIdentifier(getInterfaceName(name)),
+    undefined,
+    undefined,
+    params.map((param) =>
+      factory.createPropertySignature(
+        undefined,
+        factory.createIdentifier(param.type.name),
+        undefined,
+        factory.createKeywordTypeNode(getTsType(param.type.type)),
+      ),
+    ),
+  );
+}
+
+function getTsType(type: Type): ts.KeywordTypeSyntaxKind {
+  if (type === "Bool") {
+    return ts.SyntaxKind.BooleanKeyword;
+  } else if (typeof type === "string" && /^[IU].*/.test(type)) {
+    return ts.SyntaxKind.NumberKeyword;
+  } else {
+    return ts.SyntaxKind.StringKeyword;
+  }
+}
+
+function buildInterfaces(context: TransactionContext): ts.InterfaceDeclaration[] {
+  return Object.entries(context.inputParams).map(([name, params]) => buildInterface(name, params));
+}
+
+function buildInputArgs(context: TransactionContext) {
+  return Object.entries(context.inputParams).map(([name]) =>
+    factory.createParameterDeclaration(
+      undefined,
+      undefined,
+      factory.createIdentifier(name),
+      undefined,
+      factory.createTypeReferenceNode(factory.createIdentifier(getInterfaceName(name)), undefined),
+      undefined,
+    ),
+  );
+}
+
+function buildInputVariable(name: string, params: InputParameter[]) {
+  const obj = Object.fromEntries(params.map((param) => [param.type.name, param.value]));
+  return factory.createVariableStatement(
+    undefined,
+    factory.createVariableDeclarationList(
+      [
+        factory.createVariableDeclaration(
+          factory.createIdentifier(name),
+          undefined,
+          factory.createTypeReferenceNode(factory.createIdentifier(getInterfaceName(name)), undefined),
+          transformObjectToAstArray(obj)[0],
+        ),
+      ],
+      ts.NodeFlags.Const,
+    ),
+  );
+}
+
+function buildInputVariables(context: TransactionContext) {
+  return Object.entries(context.inputParams).map(([name, params]) => buildInputVariable(name, params));
 }

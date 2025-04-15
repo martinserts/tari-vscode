@@ -101,7 +101,7 @@ export interface QueryBuilderState {
   loadStateFromString: (state: string) => void;
   isValidInputParamsTitle: (nodeId: string, title: string) => boolean;
   updateInputParamsTitle: (nodeId: string, title: string) => void;
-  updateInputParamsNode: (nodeId: string, argName: string, value: SafeParseReturnType<unknown, unknown>) => void;
+  updateInputParamsNode: (nodeId: string, paramId: string, value: SafeParseReturnType<unknown, unknown>) => void;
   removeInputParam: (nodeId: string, paramId: string) => void;
   isValidInputParamsName: (nodeId: string, paramId: string, name: string) => boolean;
   updateInputParamsName: (nodeId: string, paramId: string, newName: string) => void;

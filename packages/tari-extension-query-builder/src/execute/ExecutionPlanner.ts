@@ -1,5 +1,5 @@
 import { NODE_ENTRY, NODE_EXIT } from "@/components/query-builder/nodes/generic-node.types";
-import { CustomNode, GenericNode, GenericNodeType, NodeType } from "@/store/types";
+import { CustomNode, GenericNode, GenericNodeType, InputParamsNode, NodeType } from "@/store/types";
 import { LogLevel, Type } from "@tari-project/typescript-bindings";
 import { Edge } from "@xyflow/react";
 import { CycleDetectedError } from "./CycleDetectedError";
@@ -7,7 +7,14 @@ import { AmbiguousOrderError } from "./AmbiguousOrderError";
 import { MissingDataError } from "./MissingDataError";
 import { Amount, fromWorkspace, Transaction, TransactionBuilder } from "@tari-project/tarijs-all";
 import { COMPONENT_ADDRESS_NAME } from "@/query-builder/template-reader";
-import { ArgValue, TransactionDescription } from "./types";
+import {
+  ArgValue,
+  ArgValueFromInputParam,
+  ArgValueFromWorkspace,
+  TransactionDescription,
+  TransactionDetails,
+} from "./types";
+import { SafeParseReturnType } from "zod";
 
 type NodeId = string;
 interface Node {
@@ -207,15 +214,62 @@ export class ExecutionPlanner {
     executionOrder: NodeId[],
     accountAddress: string,
     fee: Amount,
-  ): TransactionDescription[] {
+  ): TransactionDetails {
     const nodes = new Map(this.genericNodes.map((node) => [node.id, node]));
     const parentEdges = this.edges.filter(
-      (edge) => edge.sourceHandle !== NODE_EXIT && edge.targetHandle !== NODE_ENTRY,
+      (edge) => this.nodeMap.get(edge.source) && edge.sourceHandle !== NODE_EXIT && edge.targetHandle !== NODE_ENTRY,
     );
-    const childToParent = new Map(
-      parentEdges.map((edge) => [`${edge.target}:${edge.targetHandle ?? ""}`, edge.source]),
+    const genericNodeConnections = new Map(
+      parentEdges.map((edge) => [
+        `${edge.target}:${edge.targetHandle ?? ""}`,
+        { type: "workspace", value: edge.source } as ArgValueFromWorkspace,
+      ]),
     );
     const connectedParents = new Set(parentEdges.map((edge) => edge.source));
+
+    const inputParamsNodes = new Map(
+      (this.customNodes.filter((node) => node.type === NodeType.InputParamsNode) as InputParamsNode[]).map((node) => [
+        node.id,
+        node.data,
+      ]),
+    );
+    const inputParams = Object.fromEntries(
+      [...inputParamsNodes.values()].map((data) => {
+        const values = unwrapInputValues(data.values);
+        const params = data.inputs.map((input) => ({
+          type: input,
+          value: values[input.id] ?? undefined,
+        }));
+        return [data.title, params];
+      }),
+    );
+    const inputParamsConnections = new Map(
+      this.edges
+        .map((edge) => {
+          const inputParamNode = inputParamsNodes.get(edge.source);
+          if (!inputParamNode) {
+            return null;
+          }
+          const inputParam = inputParamNode.inputs.find((input) => input.id === edge.sourceHandle);
+          if (!inputParam) {
+            return null;
+          }
+
+          const key = `${edge.target}:${edge.targetHandle ?? ""}`;
+          const values = unwrapInputValues(inputParamNode.values);
+          const value = edge.sourceHandle ? values[edge.sourceHandle] : "";
+          const arg: ArgValueFromInputParam = {
+            type: "input",
+            value,
+            reference: {
+              name: inputParamNode.title,
+              inputParam,
+            },
+          };
+          return [key, arg];
+        })
+        .filter((r): r is [string, ArgValueFromInputParam] => r != null),
+    );
 
     const descriptions: TransactionDescription[] = [];
     descriptions.push({
@@ -232,13 +286,12 @@ export class ExecutionPlanner {
       const allArgs =
         values && data.inputs
           ? data.inputs.map((input) => {
-              const parent = childToParent.get(`${nodeId}:${input.name}`);
-              const argValue: ArgValue = parent
-                ? { type: "workspace", value: parent }
-                : {
-                    type: "other",
-                    value: values[input.name].data,
-                  };
+              const key = `${nodeId}:${input.name}`;
+              const argValue: ArgValue = inputParamsConnections.get(key) ??
+                genericNodeConnections.get(key) ?? {
+                  type: "other",
+                  value: values[input.name].data,
+                };
               return { name: input.name, value: argValue };
             })
           : [];
@@ -246,6 +299,7 @@ export class ExecutionPlanner {
         allArgs.length && allArgs[0].name === COMPONENT_ADDRESS_NAME
           ? [allArgs.slice(1), allArgs[0].value.value]
           : [allArgs, undefined];
+      const argValues = args.map((arg) => arg.value);
 
       switch (data.type) {
         case GenericNodeType.CallNode: {
@@ -253,7 +307,6 @@ export class ExecutionPlanner {
           if (!metadata) {
             throw new Error(`Missing metadata for node ${nodeId}`);
           }
-          const argValues = args.map((arg) => arg.value);
           if (metadata.isMethod) {
             if (!componentAddress || typeof componentAddress !== "string") {
               throw new Error(`Component address is not set for node ${nodeId}`);
@@ -281,14 +334,8 @@ export class ExecutionPlanner {
         case GenericNodeType.EmitLogNode: {
           descriptions.push({
             type: "addInstruction",
-            args: [
-              {
-                EmitLog: {
-                  level: args[0].value.value as LogLevel,
-                  message: args[1].value.value as string,
-                },
-              },
-            ],
+            name: "EmitLog",
+            args: argValues,
           });
           break;
         }
@@ -305,12 +352,15 @@ export class ExecutionPlanner {
       }
     }
 
-    return descriptions;
+    return {
+      context: { inputParams },
+      descriptions,
+    };
   }
 
-  public buildTransaction(descriptions: TransactionDescription[]): Transaction {
+  public buildTransaction(details: TransactionDetails): Transaction {
     const builder = new TransactionBuilder();
-    for (const description of descriptions) {
+    for (const description of details.descriptions) {
       switch (description.type) {
         case "feeTransactionPayFromComponent":
           builder.feeTransactionPayFromComponent(...description.args);
@@ -322,7 +372,16 @@ export class ExecutionPlanner {
           builder.callFunction(description.function, unwrapArgValues(description.args));
           break;
         case "addInstruction":
-          builder.addInstruction(...description.args);
+          switch (description.name) {
+            case "EmitLog":
+              builder.addInstruction({
+                EmitLog: {
+                  level: description.args[0].value as LogLevel,
+                  message: description.args[1].value as string,
+                },
+              });
+              break;
+          }
           break;
         case "saveVar":
           builder.saveVar(description.key);
@@ -339,4 +398,12 @@ function unwrapArgValue(arg: ArgValue): unknown {
 
 function unwrapArgValues(args: ArgValue[]): unknown[] {
   return args.map(unwrapArgValue);
+}
+
+function unwrapInputValues(
+  inputValues: Record<string, SafeParseReturnType<unknown, unknown>>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(inputValues).map(([key, value]) => [key, value.success ? value.data : undefined]),
+  );
 }
