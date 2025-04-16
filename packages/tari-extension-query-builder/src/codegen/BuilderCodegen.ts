@@ -13,6 +13,7 @@ import { Type } from "@tari-project/typescript-bindings";
 import * as ts from "typescript";
 
 const factory = ts.factory;
+const syntaxKindValues = Object.values(ts.SyntaxKind).filter((value) => typeof value === "number") as number[];
 
 export class BuilderCodegen {
   constructor(private readonly details: TransactionDetails) {}
@@ -294,7 +295,13 @@ export class BuilderCodegen {
       throw new Error(`Unknown instruction: ${description.name}`);
     }
     const getArg = (idx: number) => {
-      return description.args[idx].value;
+      const arg = description.args[idx];
+      return arg.type === "input"
+        ? factory.createPropertyAccessExpression(
+            factory.createIdentifier(arg.reference.name),
+            factory.createIdentifier(arg.reference.inputParam.name),
+          )
+        : description.args[idx].value;
     };
 
     const call = {
@@ -331,11 +338,15 @@ export class BuilderCodegen {
 }
 
 function transformObjectToAst(obj: unknown): ts.Expression | ts.Expression[] {
+  console.log("!!! OBJ", typeof obj, obj);
   if (Array.isArray(obj)) {
     return obj.map((item) => transformObjectToAst(item) as ts.Expression);
   }
 
   if (typeof obj === "object" && obj !== null) {
+    if (isTypescriptASTNode(obj)) {
+      return obj;
+    }
     const properties = Object.entries(obj).map(([key, value]) =>
       factory.createPropertyAssignment(factory.createIdentifier(key), transformObjectToAst(value) as ts.Expression),
     );
@@ -449,4 +460,11 @@ function buildInputVariable(name: string, params: InputParameter[]) {
 
 function buildInputVariables(context: TransactionContext) {
   return Object.entries(context.inputParams).map(([name, params]) => buildInputVariable(name, params));
+}
+
+function isTypescriptASTNode(obj: unknown): obj is ts.Expression {
+  if (typeof obj !== "object" || obj === null || !("kind" in obj) || typeof obj.kind !== "number") {
+    return false;
+  }
+  return syntaxKindValues.includes(obj.kind);
 }
