@@ -1,5 +1,5 @@
 import { CALL_NODE_RETURN } from "@/components/query-builder/nodes/call-node.types";
-import { GenericNodeType, NodeType, QueryBuilderState } from "@/store/types";
+import { GenericNodeType, InputConnectionType, NodeType, QueryBuilderState } from "@/store/types";
 import { TemplateDef } from "@tari-project/typescript-bindings";
 
 export const COMPONENT_ADDRESS_NAME = "__component_address___";
@@ -29,14 +29,14 @@ export class TemplateReader {
     const inputs = args.map((arg) => {
       if (arg.name === "self") {
         return {
-          hasEnterConnection: false,
+          inputConnectionType: InputConnectionType.ComponentAddress,
           name: COMPONENT_ADDRESS_NAME,
           label: "Component Address",
           type: { Other: { name: "Component" } },
         };
       }
       return {
-        hasEnterConnection: true,
+        inputConnectionType: InputConnectionType.Parameter,
         name: arg.name,
         type: arg.arg_type,
       };

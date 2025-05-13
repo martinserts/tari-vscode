@@ -5,7 +5,7 @@ import tariSwapPoolFunctions from "./stories/data/tari-swap-pool.json";
 import { TemplateDef } from "@tari-project/typescript-bindings";
 import useStore from "./store/store";
 import { TemplateReader } from "./query-builder/template-reader";
-import { GenericNodeType, NodeType } from "./store/types";
+import { GenericNodeType, InputConnectionType, NodeType } from "./store/types";
 
 function App() {
   const added = useRef<boolean>(false);
@@ -50,13 +50,13 @@ function App() {
           title: "swap",
           inputs: [
             {
-              hasEnterConnection: false,
+              inputConnectionType: InputConnectionType.Parameter,
               name: "fee",
               label: "Fee",
               type: "U16",
             },
             {
-              hasEnterConnection: true,
+              inputConnectionType: InputConnectionType.Parameter,
               name: "input_bucket",
               label: "input_bucket",
               type: {
@@ -66,20 +66,20 @@ function App() {
               },
             },
             {
-              hasEnterConnection: true,
+              inputConnectionType: InputConnectionType.Parameter,
               name: "is_valid",
               label: "is_valid",
               type: "Bool",
             },
             {
-              hasEnterConnection: true,
+              inputConnectionType: InputConnectionType.Parameter,
               name: "log_level",
               label: "Log Level",
               type: "String",
               validValues: ["Error", "Warn", "Info", "Debug"],
             },
             {
-              hasEnterConnection: true,
+              inputConnectionType: InputConnectionType.Parameter,
               name: "output_resource",
               label: "output_resource",
               type: {

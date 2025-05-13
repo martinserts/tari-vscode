@@ -245,26 +245,41 @@ export class BuilderCodegen {
     );
   }
 
+  private createArgValueAst(arg: ArgValue): ts.Expression {
+    switch (arg.type) {
+      case "workspace":
+        return factory.createCallExpression(factory.createIdentifier("fromWorkspace"), undefined, [
+          factory.createStringLiteral(arg.value),
+        ]);
+      case "input":
+        return factory.createPropertyAccessExpression(
+          factory.createIdentifier(arg.reference.name),
+          factory.createIdentifier(arg.reference.inputParam.name),
+        );
+      default:
+        return transformObjectToAstArray(arg.value)[0];
+    }
+  }
+
   private createArgValuesAst(args: ArgValue[]): ts.Expression {
-    const expressions = args.map((arg) => {
-      switch (arg.type) {
-        case "workspace":
-          return factory.createCallExpression(factory.createIdentifier("fromWorkspace"), undefined, [
-            factory.createStringLiteral(arg.value),
-          ]);
-        case "input":
-          return factory.createPropertyAccessExpression(
-            factory.createIdentifier(arg.reference.name),
-            factory.createIdentifier(arg.reference.inputParam.name),
-          );
-        default:
-          return transformObjectToAstArray(arg.value)[0];
-      }
-    });
+    const expressions = args.map((arg) => this.createArgValueAst(arg));
     return factory.createArrayLiteralExpression(expressions, false);
   }
 
   private createCallMethod(description: CallMethodDescription): ts.Statement {
+    const objExpression = factory.createObjectLiteralExpression(
+      [
+        factory.createPropertyAssignment(
+          factory.createIdentifier("componentAddress"),
+          this.createArgValueAst(description.componentAddress),
+        ),
+        factory.createPropertyAssignment(
+          factory.createIdentifier("methodName"),
+          transformObjectToAstArray(description.methodName)[0],
+        ),
+      ],
+      true,
+    );
     return factory.createExpressionStatement(
       factory.createCallExpression(
         factory.createPropertyAccessExpression(
@@ -272,7 +287,7 @@ export class BuilderCodegen {
           factory.createIdentifier("callMethod"),
         ),
         undefined,
-        [transformObjectToAstArray(description.method)[0], this.createArgValuesAst(description.args)],
+        [objExpression, this.createArgValuesAst(description.args)],
       ),
     );
   }
@@ -338,7 +353,6 @@ export class BuilderCodegen {
 }
 
 function transformObjectToAst(obj: unknown): ts.Expression | ts.Expression[] {
-  console.log("!!! OBJ", typeof obj, obj);
   if (Array.isArray(obj)) {
     return obj.map((item) => transformObjectToAst(item) as ts.Expression);
   }

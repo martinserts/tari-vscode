@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ExecutionPlanner } from "./ExecutionPlanner";
-import { GenericNode, GenericNodeType } from "@/store/types";
+import { InputConnectionType, GenericNode, GenericNodeType } from "@/store/types";
 import { Edge } from "@xyflow/react";
 import { NODE_ENTRY, NODE_EXIT } from "@/components/query-builder/nodes/generic-node.types";
 import { CycleDetectedError } from "./CycleDetectedError";
@@ -21,7 +21,7 @@ describe(ExecutionPlanner, () => {
     },
   });
   const buildInputParameter = (name: string): NonNullable<GenericNode["data"]["inputs"]>[0] => ({
-    hasEnterConnection: true,
+    inputConnectionType: InputConnectionType.Parameter,
     type: "String",
     name,
   });

@@ -2,7 +2,7 @@ import { Handle, NodeProps, Position } from "@xyflow/react";
 import { TrashIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import useStore from "@/store/store";
-import { NodeType, type GenericNode } from "@/store/types";
+import { InputConnectionType, NodeType, type GenericNode } from "@/store/types";
 import ExitConnection from "../exit-connection";
 import EnterConnection from "../enter-connection";
 import NodeIcon from "./node-icon";
@@ -82,20 +82,34 @@ function GenericNode(props: NodeProps<GenericNode>) {
       {largeCaption && <Label className="text-4xl font-bold p-8 font-stretch-expanded">{largeCaption}</Label>}
 
       {inputs?.map((input, idx) => {
-        return (
-          input.hasEnterConnection && (
-            <Handle
-              key={input.name}
-              id={input.name}
-              type="target"
-              position={Position.Left}
-              style={{
-                border: "2px solid green",
-                top: `${(HANDLE_STARTING_OFFSET + idx * FULL_ROW_HEIGHT).toString()}px`,
-              }}
-            />
-          )
-        );
+        switch (input.inputConnectionType) {
+          case InputConnectionType.Parameter:
+            return (
+              <Handle
+                key={input.name}
+                id={input.name}
+                type="target"
+                position={Position.Left}
+                style={{
+                  border: "2px solid green",
+                  top: `${(HANDLE_STARTING_OFFSET + idx * FULL_ROW_HEIGHT).toString()}px`,
+                }}
+              />
+            );
+          case InputConnectionType.ComponentAddress:
+            return (
+              <Handle
+                key={input.name}
+                id={input.name}
+                type="target"
+                position={Position.Left}
+                style={{
+                  border: "2px solid orange",
+                  top: `${(HANDLE_STARTING_OFFSET + idx * FULL_ROW_HEIGHT).toString()}px`,
+                }}
+              />
+            );
+        }
       })}
 
       {title && <h3 className="text-center font-bold pt-1 pb-3 border-b">{title}</h3>}

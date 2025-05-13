@@ -31,7 +31,8 @@ export type ArgValue = ArgValueFromInputParam | ArgValueFromWorkspace | ArgValue
 
 export interface CallMethodDescription {
   type: "callMethod";
-  method: Parameters<TransactionBuilder["callMethod"]>[0];
+  componentAddress: ArgValue;
+  methodName: string;
   args: ArgValue[];
 }
 

@@ -297,7 +297,7 @@ export class ExecutionPlanner {
           : [];
       const [args, componentAddress] =
         allArgs.length && allArgs[0].name === COMPONENT_ADDRESS_NAME
-          ? [allArgs.slice(1), allArgs[0].value.value]
+          ? [allArgs.slice(1), allArgs[0].value]
           : [allArgs, undefined];
       const argValues = args.map((arg) => arg.value);
 
@@ -308,15 +308,13 @@ export class ExecutionPlanner {
             throw new Error(`Missing metadata for node ${nodeId}`);
           }
           if (metadata.isMethod) {
-            if (!componentAddress || typeof componentAddress !== "string") {
+            if (!componentAddress) {
               throw new Error(`Component address is not set for node ${nodeId}`);
             }
             descriptions.push({
               type: "callMethod",
-              method: {
-                componentAddress,
-                methodName: metadata.fn.name,
-              },
+              componentAddress,
+              methodName: metadata.fn.name,
               args: argValues,
             });
           } else {
@@ -366,7 +364,13 @@ export class ExecutionPlanner {
           builder.feeTransactionPayFromComponent(...description.args);
           break;
         case "callMethod":
-          builder.callMethod(description.method, unwrapArgValues(description.args));
+          builder.callMethod(
+            {
+              componentAddress: description.componentAddress.value as string,
+              methodName: description.methodName,
+            },
+            unwrapArgValues(description.args),
+          );
           break;
         case "callFunction":
           builder.callFunction(description.function, unwrapArgValues(description.args));

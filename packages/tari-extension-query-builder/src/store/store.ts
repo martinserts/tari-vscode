@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { addEdge, applyNodeChanges, applyEdgeChanges } from "@xyflow/react";
 import { v4 as uuidv4 } from "uuid";
-import { CustomNode, NodeType, type QueryBuilderState } from "./types";
+import { CustomNode, InputConnectionType, NodeType, type QueryBuilderState } from "./types";
 import { NODE_ENTRY, NODE_EXIT } from "@/components/query-builder/nodes/generic-node.types";
 import { latestVersionHandler, versionHandlers } from "./persistence/handlers";
 import { NEW_INPUT_PARAM } from "@/components/query-builder/nodes/input/constants";
@@ -57,10 +57,14 @@ const useStore = create<QueryBuilderState>((set, get) => ({
           return;
         }
         const existingInputs = sourceNode.data.inputs.map((input) => input.name);
+        const targetName =
+          targetArgument.inputConnectionType === InputConnectionType.ComponentAddress
+            ? "componentAddress"
+            : targetArgument.name;
         const newInput = {
           id: uuidv4(),
           type: targetArgument.type,
-          name: getNextAvailable(targetArgument.name, (name) => !existingInputs.includes(name)),
+          name: getNextAvailable(targetName, (name) => !existingInputs.includes(name)),
         };
         const updatedInputs = [...sourceNode.data.inputs, newInput];
         const updatedNode = {
@@ -89,6 +93,14 @@ const useStore = create<QueryBuilderState>((set, get) => ({
           changeCounter: state.changeCounter + 1,
         }));
         return;
+      }
+
+      // Component address is not connectable from a generic node (only from params node)
+      if (sourceNode.type === NodeType.GenericNode && targetNode.type === NodeType.GenericNode) {
+        const targetArgument = targetNode.data.inputs?.find((input) => input.name === connection.targetHandle);
+        if (targetArgument?.inputConnectionType === InputConnectionType.ComponentAddress) {
+          return;
+        }
       }
 
       set((state) => ({
@@ -314,7 +326,7 @@ const useStore = create<QueryBuilderState>((set, get) => ({
           }
           return node;
         }),
-        edges: state.edges.filter((edge) => edge.source !== nodeId && edge.source !== paramId),
+        edges: state.edges.filter((edge) => !(edge.source === nodeId && edge.sourceHandle === paramId)),
         changeCounter: state.changeCounter + 1,
       }));
     }

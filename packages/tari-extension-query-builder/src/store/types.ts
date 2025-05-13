@@ -32,8 +32,13 @@ export interface CallNodeMetadata {
 
 export type GenericNodeMetadata = CallNodeMetadata;
 export type GenericNodeIcon = "enter" | "rocket" | "home" | "cube" | "check-circled";
+export enum InputConnectionType {
+  None = 0,
+  Parameter,
+  ComponentAddress,
+}
 export interface GenericNodeInputType {
-  hasEnterConnection: boolean;
+  inputConnectionType: InputConnectionType;
   type: Type;
   name: string;
   label?: string;

@@ -11,7 +11,7 @@ import {
 import { CALL_NODE_DRAG_DROP_TYPE, GeneratedCodeType, TransactionProps } from "tari-extension-common";
 import useStore from "../../store/store";
 import { useShallow } from "zustand/shallow";
-import { GenericNodeType, NodeType, QueryBuilderState } from "@/store/types";
+import { InputConnectionType, GenericNodeType, NodeType, QueryBuilderState } from "@/store/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ButtonEdge from "./edges/button-edge";
 import { TariFlowNodeDetails } from "@/types";
@@ -276,14 +276,14 @@ function Flow({
         title: "Emit Log",
         inputs: [
           {
-            hasEnterConnection: true,
+            inputConnectionType: InputConnectionType.None,
             name: "log_level",
             label: "Log Level",
             type: "String",
             validValues: ["Error", "Warn", "Info", "Debug"],
           },
           {
-            hasEnterConnection: true,
+            inputConnectionType: InputConnectionType.None,
             name: "message",
             label: "Message",
             type: "String",
@@ -304,19 +304,19 @@ function Flow({
         title: "Assert Bucket Contains",
         inputs: [
           {
-            hasEnterConnection: true,
+            inputConnectionType: InputConnectionType.None,
             name: "key",
             label: "Key",
             type: { Vec: "U8" },
           },
           {
-            hasEnterConnection: true,
+            inputConnectionType: InputConnectionType.None,
             name: "resource_address",
             label: "Resource Address",
             type: { Other: { name: "ResourceAddress" } },
           },
           {
-            hasEnterConnection: true,
+            inputConnectionType: InputConnectionType.None,
             name: "min_amount",
             label: "Minimum Amount",
             type: { Other: { name: "Amount" } },
