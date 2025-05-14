@@ -6,6 +6,12 @@ import { NODE_ENTRY, NODE_EXIT } from "@/components/query-builder/nodes/generic-
 import { latestVersionHandler, versionHandlers } from "./persistence/handlers";
 import { NEW_INPUT_PARAM } from "@/components/query-builder/nodes/input/constants";
 import { getNextAvailable } from "@/lib/get-next-available";
+import {
+  CALL_NODE_RETURN,
+  CALL_NODE_RETURN_TUPLE_1,
+  CALL_NODE_RETURN_TUPLE_2,
+} from "@/components/query-builder/nodes/call-node.types";
+import { TariType } from "@/query-builder/tari-type";
 
 const DROP_NODE_OFFSET_X = 200;
 const DROP_NODE_OFFSET_Y = 50;
@@ -74,11 +80,6 @@ const useStore = create<QueryBuilderState>((set, get) => ({
             inputs: updatedInputs,
           },
         };
-        set((state) => ({
-          nodes: state.nodes.map((node) =>
-            node.id === sourceNode.id && node.type === NodeType.InputParamsNode ? updatedNode : node,
-          ),
-        }));
         set((state) => ({
           nodes: state.nodes.map((node) =>
             node.id === sourceNode.id && node.type === NodeType.InputParamsNode ? updatedNode : node,
@@ -206,10 +207,30 @@ const useStore = create<QueryBuilderState>((set, get) => ({
       }
     }
 
-    if (source.type !== NodeType.GenericNode || !targetArgument) {
+    if (source.type !== NodeType.GenericNode || !targetArgument || targetAlreadyConnected || !connection.sourceHandle) {
       return false;
     }
-    return !targetAlreadyConnected && JSON.stringify(source.data.output?.type) === JSON.stringify(targetArgument.type);
+    const outputType = source.data.output?.type;
+    if (!outputType) {
+      return false;
+    }
+
+    const serializedTarget = JSON.stringify(targetArgument.type);
+
+    switch (connection.sourceHandle) {
+      case CALL_NODE_RETURN:
+        return JSON.stringify(outputType) === serializedTarget;
+      case CALL_NODE_RETURN_TUPLE_1: {
+        const [tuple1] = new TariType(outputType).getTupleDetails();
+        return JSON.stringify(tuple1?.type) === serializedTarget;
+      }
+      case CALL_NODE_RETURN_TUPLE_2: {
+        const [, tuple2] = new TariType(outputType).getTupleDetails();
+        return JSON.stringify(tuple2?.type) === serializedTarget;
+      }
+    }
+
+    return false;
   },
   removeNode: (nodeId) => {
     if (!get().readOnly) {

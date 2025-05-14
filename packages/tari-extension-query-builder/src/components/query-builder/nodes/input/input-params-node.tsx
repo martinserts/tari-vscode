@@ -4,7 +4,7 @@ import { InputParameterType, NodeType, type InputParamsNode } from "@/store/type
 import { InputIcon, TrashIcon } from "@radix-ui/react-icons";
 import { Handle, NodeProps, Position, useUpdateNodeInternals } from "@xyflow/react";
 import { NEW_INPUT_PARAM } from "./constants";
-import { ROW_HEIGHT, ROW_HEIGHT_PX, ROW_PADDING } from "../constamts";
+import { ROW_HEIGHT, ROW_HEIGHT_PX, ROW_PADDING } from "../constants";
 import { Separator } from "@/components/ui/separator";
 import { InputControlType, TariType } from "@/query-builder/tari-type";
 import CallInputCheckbox from "../../input/call-input-checkbox";

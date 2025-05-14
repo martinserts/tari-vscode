@@ -9,10 +9,10 @@ import NodeIcon from "./node-icon";
 import { Badge } from "@/components/ui/badge";
 import { InputControlType, TariType } from "@/query-builder/tari-type";
 import CallInputText from "../../input/call-input-text";
-import { ROW_HEIGHT, ROW_HEIGHT_PX, ROW_PADDING } from "../constamts";
+import { OUTPUT_HEIGHT, ROW_HEIGHT, ROW_HEIGHT_PX, ROW_PADDING } from "../constants";
 import CallInputCheckbox from "../../input/call-input-checkbox";
 import { Separator } from "@/components/ui/separator";
-import { CALL_NODE_RETURN } from "../call-node.types";
+import { CALL_NODE_RETURN, CALL_NODE_RETURN_TUPLE_1, CALL_NODE_RETURN_TUPLE_2 } from "../call-node.types";
 import { useCallback } from "react";
 import { SafeParseReturnType, z } from "zod";
 import CallInputSelect from "../../input/call-input-select";
@@ -33,8 +33,8 @@ function GenericNode(props: NodeProps<GenericNode>) {
 
   const outputType = output ? new TariType(output.type) : undefined;
 
-  const getOutputOffset = () => {
-    const offset = HANDLE_STARTING_OFFSET + FULL_ROW_HEIGHT * (inputs ? inputs.length : 0) + 25;
+  const getOutputOffset = (idx = 0) => {
+    const offset = HANDLE_STARTING_OFFSET + FULL_ROW_HEIGHT * (inputs ? inputs.length : 0) + 25 + idx * OUTPUT_HEIGHT;
     return `${offset.toString()}px`;
   };
 
@@ -187,24 +187,63 @@ function GenericNode(props: NodeProps<GenericNode>) {
         </form>
       )}
 
-      {outputType && (
-        <>
-          <Separator className="my-4 h-px w-full bg-gray-300 dark:bg-gray-600" />
-          <div className="flex justify-end w-full">
-            <span className="font-semibold text-lg pr-2">{outputType.prompt}</span>
-          </div>
-        </>
-      )}
-      {outputType && !outputType.isVoid() && (
+      {outputType && renderOutputs(outputType, getOutputOffset)}
+    </>
+  );
+}
+
+function renderOutputPrompt(outputType: TariType) {
+  return (
+    <div className="flex justify-end w-full">
+      <span className="font-semibold text-lg pr-2">{outputType.prompt}</span>
+    </div>
+  );
+}
+
+function renderOutputs(outputType: TariType, getOutputOffset: (idx: number) => string) {
+  const [tuple1, tuple2] = outputType.getTupleDetails();
+  return (
+    <>
+      <Separator className="my-4 h-px w-full bg-gray-300 dark:bg-gray-600" />
+      {renderOutputPrompt(outputType)}
+      {!outputType.isVoid() && (
         <Handle
           id={CALL_NODE_RETURN}
           type="source"
           position={Position.Right}
           style={{
             border: "2px solid #608bb9",
-            top: getOutputOffset(),
+            top: getOutputOffset(0),
           }}
         />
+      )}
+      {tuple1 && (
+        <>
+          {renderOutputPrompt(tuple1)}
+          <Handle
+            id={CALL_NODE_RETURN_TUPLE_1}
+            type="source"
+            position={Position.Right}
+            style={{
+              border: "2px solid #49698c",
+              top: getOutputOffset(1),
+            }}
+          />
+        </>
+      )}
+      {tuple2 && (
+        <>
+          {renderOutputPrompt(tuple2)}
+          <Handle
+            id={CALL_NODE_RETURN_TUPLE_2}
+            type="source"
+            position={Position.Right}
+            style={{
+              border: "2px solid #49698c",
+              top: getOutputOffset(2),
+            }}
+          />
+        </>
       )}
     </>
   );

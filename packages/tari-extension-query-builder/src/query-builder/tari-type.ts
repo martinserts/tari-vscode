@@ -41,6 +41,17 @@ export class TariType {
   public isVoid(): boolean {
     return this.type === "Unit";
   }
+
+  public isTuple(): boolean {
+    return typeof this.type === "object" && "Tuple" in this.type;
+  }
+
+  public getTupleDetails(): [TariType?, TariType?] {
+    if (typeof this.type === "object" && "Tuple" in this.type && this.type.Tuple.length === 2) {
+      return [new TariType(this.type.Tuple[0]), new TariType(this.type.Tuple[1])];
+    }
+    return [undefined, undefined];
+  }
 }
 
 function getSignedMin(bits: number): bigint {

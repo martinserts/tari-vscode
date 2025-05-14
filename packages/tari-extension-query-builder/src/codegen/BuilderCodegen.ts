@@ -386,7 +386,7 @@ function transformObjectToAstArray(obj: unknown): ts.Expression[] {
   return Array.isArray(expressions) ? expressions : [expressions];
 }
 
-function addEmptyComment<T extends ts.Node>(node: T) {
+function addEmptyComment<T extends ts.Node>(node: T): T {
   return ts.addSyntheticLeadingComment(node, ts.SyntaxKind.SingleLineCommentTrivia, "", true);
 }
 
@@ -441,7 +441,7 @@ function buildInterfaces(context: TransactionContext): ts.InterfaceDeclaration[]
   return Object.entries(context.inputParams).map(([name, params]) => buildInterface(name, params));
 }
 
-function buildInputArgs(context: TransactionContext) {
+function buildInputArgs(context: TransactionContext): ts.ParameterDeclaration[] {
   return Object.entries(context.inputParams).map(([name]) =>
     factory.createParameterDeclaration(
       undefined,
@@ -472,7 +472,7 @@ function buildInputVariable(name: string, params: InputParameter[]) {
   );
 }
 
-function buildInputVariables(context: TransactionContext) {
+function buildInputVariables(context: TransactionContext): ts.VariableStatement[] {
   return Object.entries(context.inputParams).map(([name, params]) => buildInputVariable(name, params));
 }
 

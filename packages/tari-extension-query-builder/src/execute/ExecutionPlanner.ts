@@ -15,6 +15,7 @@ import {
   TransactionDetails,
 } from "./types";
 import { SafeParseReturnType } from "zod";
+import { CALL_NODE_RETURN_TUPLE_1, CALL_NODE_RETURN_TUPLE_2 } from "@/components/query-builder/nodes/call-node.types";
 
 type NodeId = string;
 interface Node {
@@ -219,11 +220,17 @@ export class ExecutionPlanner {
     const parentEdges = this.edges.filter(
       (edge) => this.nodeMap.get(edge.source) && edge.sourceHandle !== NODE_EXIT && edge.targetHandle !== NODE_ENTRY,
     );
+    const argValueFromWorkspace = (edge: Edge): ArgValueFromWorkspace => {
+      const postfix =
+        edge.sourceHandle === CALL_NODE_RETURN_TUPLE_1
+          ? ".0"
+          : edge.sourceHandle === CALL_NODE_RETURN_TUPLE_2
+            ? ".1"
+            : "";
+      return { type: "workspace", value: `${edge.source}${postfix}` };
+    };
     const genericNodeConnections = new Map(
-      parentEdges.map((edge) => [
-        `${edge.target}:${edge.targetHandle ?? ""}`,
-        { type: "workspace", value: edge.source } as ArgValueFromWorkspace,
-      ]),
+      parentEdges.map((edge) => [`${edge.target}:${edge.targetHandle ?? ""}`, argValueFromWorkspace(edge)]),
     );
     const connectedParents = new Set(parentEdges.map((edge) => edge.source));
 
@@ -233,16 +240,19 @@ export class ExecutionPlanner {
         node.data,
       ]),
     );
-    const inputParams = Object.fromEntries(
-      [...inputParamsNodes.values()].map((data) => {
-        const values = unwrapInputValues(data.values);
-        const params = data.inputs.map((input) => ({
-          type: input,
-          value: values[input.id] ?? undefined,
-        }));
-        return [data.title, params];
-      }),
-    );
+    const inputParams =
+      inputParamsNodes.size > 0
+        ? Object.fromEntries(
+            [...inputParamsNodes.values()].map((data) => {
+              const values = unwrapInputValues(data.values);
+              const params = data.inputs.map((input) => ({
+                type: input,
+                value: values[input.id] ?? undefined,
+              }));
+              return [data.title, params];
+            }),
+          )
+        : { input: [] };
     const inputParamsConnections = new Map(
       this.edges
         .map((edge) => {
