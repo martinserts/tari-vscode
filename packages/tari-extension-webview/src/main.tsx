@@ -9,7 +9,7 @@ import {
   TariNetwork,
   WebViewMessages,
 } from "tari-extension-common";
-import { useTariStore } from "./store/tari-store.ts";
+import { useTariStore } from "./store/tari-store";
 import {
   buildTransactionRequest,
   Network,
@@ -18,6 +18,7 @@ import {
   TransactionResult,
   TransactionStatus,
 } from "@tari-project/tarijs-all";
+import { SerializedTariStore } from "./store/types";
 
 registerMessenger();
 const rootElement = document.getElementById("root");
@@ -35,7 +36,7 @@ function registerMessenger() {
   if (!vsCodeActive) {
     return;
   }
-  const vscode = acquireVsCodeApi();
+  const vscode = acquireVsCodeApi<SerializedTariStore>();
   const messenger = new Messenger<WebViewMessages>({
     sendMessage: (msg) => {
       vscode.postMessage(msg);
@@ -67,7 +68,7 @@ function registerMessenger() {
       signer,
       closeAllActions,
       setTransactionExecutionActionsOpen,
-      addTransactionExecution,
+      transactionExecutionAction,
       configuration,
     } = useTariStore.getState();
     if (!signer || !accountData) {
@@ -89,7 +90,7 @@ function registerMessenger() {
     );
     const response = await signer.submitTransaction(submitTransactionRequest);
     const result = await waitForAnyTransactionResult(signer, response.transaction_id);
-    addTransactionExecution(
+    transactionExecutionAction.addTransactionExecution(
       result,
       configuration ? configuration[TariConfigurationKey.MaxTransactionExecutionResults] : undefined,
     );

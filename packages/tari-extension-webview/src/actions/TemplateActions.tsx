@@ -20,6 +20,8 @@ import { JsonDocument } from "../json-parser/JsonDocument";
 import { JsonOutline } from "../json-parser/JsonOutline";
 import { TEMPLATE_DETAILS_PARTS } from "../json-parser/known-parts/template-details";
 import { useEnterKey } from "../hooks/textfield-enter";
+import { TariStore, TariStoreAction } from "../store/types";
+import { useShallow } from "zustand/shallow";
 
 interface TemplateActionsProps {
   signer: TariSigner;
@@ -27,14 +29,22 @@ interface TemplateActionsProps {
   onToggle?: (open: boolean) => void;
 }
 
+const selector = (state: TariStore & TariStoreAction) => ({
+  templateAddress: state.templateState.templateAddress,
+  templateDef: state.templateState.templateDef,
+  setTemplateAddress: state.templateActions.setTemplateAddress,
+  setTemplateDef: state.templateActions.setTemplateDef,
+});
+
 function TemplateActions({ signer, open, onToggle }: TemplateActionsProps) {
   const newFlowRef = useRef<ve.VscodeIcon | null>(null);
   const messenger = useTariStore((state) => state.messenger);
+  const { templateAddress, templateDef, setTemplateAddress, setTemplateDef } = useTariStore(useShallow(selector));
   const [jsonDocument, setJsonDocument] = useState<JsonDocument | undefined>(undefined);
   const [outlineItems, setOutlineItems] = useState<JsonOutlineItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [templateAddress, setTemplateAddress] = useState<string | null>(null);
   const templateAddressRef = useRef<ve.VscodeTextfield>(null);
+  const [shouldShowDocument, setShouldShowDocument] = useState(false);
 
   const collapsibleRef = useCollapsibleToggle(onToggle ?? (() => undefined));
 
@@ -87,29 +97,44 @@ function TemplateActions({ signer, open, onToggle }: TemplateActionsProps) {
     };
   });
 
+  useEffect(() => {
+    if (!open || !templateDef || !messenger) {
+      return;
+    }
+    const document = new JsonDocument("Template definition", templateDef);
+    setJsonDocument(document);
+    const outline = new JsonOutline(document, TEMPLATE_DETAILS_PARTS);
+    setOutlineItems(outline.items);
+
+    if (shouldShowDocument) {
+      messenger
+        .send("showJsonOutline", {
+          id: document.id,
+          json: document.jsonString,
+          outlineItems: outline.items,
+        })
+        .then(() => {
+          setShouldShowDocument(false);
+        })
+        .catch(console.error);
+    }
+  }, [open, templateDef, messenger, shouldShowDocument, setShouldShowDocument]);
+
   const fetchTemplateDetails = useCallback(
     async (templateAddressToFetch: string) => {
       if (messenger) {
         setLoading(true);
         try {
           const details = await signer.getTemplateDefinition(templateAddressToFetch);
-          const document = new JsonDocument("Template definition", details);
-          setJsonDocument(document);
-          const outline = new JsonOutline(document, TEMPLATE_DETAILS_PARTS);
-          setOutlineItems(outline.items);
-
-          await messenger.send("showJsonOutline", {
-            id: document.id,
-            json: document.jsonString,
-            outlineItems: outline.items,
-          });
+          setTemplateDef(details);
+          setShouldShowDocument(true);
         } catch (error: unknown) {
           await messenger.send("showError", { message: "Failed to fetch template definition", detail: String(error) });
         }
         setLoading(false);
       }
     },
-    [messenger, signer],
+    [messenger, signer, setTemplateDef],
   );
 
   const handleEnterPressed = useCallback(() => {
@@ -137,9 +162,10 @@ function TemplateActions({ signer, open, onToggle }: TemplateActionsProps) {
             <VscodeTextfield
               ref={templateAddressRef}
               id="templateAddress"
+              value={templateAddress ?? ""}
               onInput={(event) => {
                 const target = event.target as ve.VscodeTextfield;
-                setTemplateAddress(target.value || null);
+                setTemplateAddress(target.value);
               }}
             />
           </VscodeFormGroup>

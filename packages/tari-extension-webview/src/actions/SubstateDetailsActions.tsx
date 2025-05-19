@@ -19,6 +19,8 @@ import { JsonOutline } from "../json-parser/JsonOutline";
 import { SUBSTATE_DETAILS_PARTS } from "../json-parser/known-parts/substate-details";
 import { useCollapsibleToggle } from "../hooks/collapsible-toggle";
 import { useEnterKey } from "../hooks/textfield-enter";
+import { TariStore, TariStoreAction } from "../store/types";
+import { useShallow } from "zustand/shallow";
 
 interface SubstateDetailsActionsProps {
   signer: TariSigner;
@@ -27,6 +29,13 @@ interface SubstateDetailsActionsProps {
   onToggle?: (open: boolean) => void;
 }
 
+const selector = (state: TariStore & TariStoreAction) => ({
+  substateId: state.substateDetailsState.substateId,
+  substate: state.substateDetailsState.substate,
+  setSubstateId: state.substateDetailsActions.setSubstateId,
+  setSubstate: state.substateDetailsActions.setSubstate,
+});
+
 function SubstateDetailsActions({
   signer,
   substateId: externalSubstateId,
@@ -34,11 +43,12 @@ function SubstateDetailsActions({
   onToggle,
 }: SubstateDetailsActionsProps) {
   const messenger = useTariStore((state) => state.messenger);
+  const { substateId, substate, setSubstateId, setSubstate } = useTariStore(useShallow(selector));
   const [jsonDocument, setJsonDocument] = useState<JsonDocument | undefined>(undefined);
   const [outlineItems, setOutlineItems] = useState<JsonOutlineItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [substateId, setSubstateId] = useState<string | null>(externalSubstateId ?? null);
   const substateIdRef = useRef<ve.VscodeTextfield>(null);
+  const [shouldShowDocument, setShouldShowDocument] = useState(false);
 
   const collapsibleRef = useCollapsibleToggle(onToggle ?? (() => undefined));
 
@@ -53,29 +63,44 @@ function SubstateDetailsActions({
     }
   };
 
+  useEffect(() => {
+    if (!open || !substate || !messenger) {
+      return;
+    }
+    const document = new JsonDocument("Substate details", substate);
+    setJsonDocument(document);
+    const outline = new JsonOutline(document, SUBSTATE_DETAILS_PARTS);
+    setOutlineItems(outline.items);
+
+    if (shouldShowDocument) {
+      messenger
+        .send("showJsonOutline", {
+          id: document.id,
+          json: document.jsonString,
+          outlineItems: outline.items,
+        })
+        .then(() => {
+          setShouldShowDocument(false);
+        })
+        .catch(console.error);
+    }
+  }, [open, substate, messenger, shouldShowDocument, setShouldShowDocument]);
+
   const fetchSubstateDetails = useCallback(
     async (substateIdToFetch: string) => {
       if (messenger) {
         setLoading(true);
         try {
           const details = await signer.getSubstate(substateIdToFetch);
-          const document = new JsonDocument("Substate details", details);
-          setJsonDocument(document);
-          const outline = new JsonOutline(document, SUBSTATE_DETAILS_PARTS);
-          setOutlineItems(outline.items);
-
-          await messenger.send("showJsonOutline", {
-            id: document.id,
-            json: document.jsonString,
-            outlineItems: outline.items,
-          });
+          setSubstate(details);
+          setShouldShowDocument(true);
         } catch (error: unknown) {
           await messenger.send("showError", { message: "Failed to fetch substate details", detail: String(error) });
         }
         setLoading(false);
       }
     },
-    [messenger, signer],
+    [messenger, signer, setSubstate],
   );
 
   const handleEnterPressed = useCallback(() => {
@@ -91,7 +116,7 @@ function SubstateDetailsActions({
       setSubstateId(externalSubstateId);
       void fetchSubstateDetails(externalSubstateId);
     }
-  }, [externalSubstateId, fetchSubstateDetails]);
+  }, [externalSubstateId, fetchSubstateDetails, setSubstateId]);
 
   return (
     <>
@@ -105,7 +130,7 @@ function SubstateDetailsActions({
               value={substateId ?? ""}
               onInput={(event) => {
                 const target = event.target as ve.VscodeTextfield;
-                setSubstateId(target.value || null);
+                setSubstateId(target.value);
               }}
             />
           </VscodeFormGroup>

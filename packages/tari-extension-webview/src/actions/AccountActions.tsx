@@ -19,9 +19,12 @@ interface AccountActionsProps {
 function AccountActions({ signer, open, onToggle }: AccountActionsProps) {
   const refreshRef = useRef<ve.VscodeIcon | null>(null);
   const messenger = useTariStore((state) => state.messenger);
+  const accountData = useTariStore((state) => state.accountData);
+  const setAccountData = useTariStore((state) => state.setAccountData);
   const [jsonDocument, setJsonDocument] = useState<JsonDocument | undefined>(undefined);
   const [outlineItems, setOutlineItems] = useState<JsonOutlineItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [shouldShowDocument, setShouldShowDocument] = useState(false);
 
   const handleRefreshClick = (event: MouseEvent) => {
     event.stopPropagation();
@@ -49,21 +52,36 @@ function AccountActions({ signer, open, onToggle }: AccountActionsProps) {
     };
   });
 
+  useEffect(() => {
+    if (!open || !accountData || !messenger) {
+      return;
+    }
+    const document = new JsonDocument("Account", accountData);
+    setJsonDocument(document);
+    const outline = new JsonOutline(document, ACCOUNT_KNOWN_PARTS);
+    setOutlineItems(outline.items);
+
+    if (shouldShowDocument) {
+      messenger
+        .send("showJsonOutline", {
+          id: document.id,
+          json: document.jsonString,
+          outlineItems: outline.items,
+        })
+        .then(() => {
+          setShouldShowDocument(false);
+        })
+        .catch(console.error);
+    }
+  }, [open, accountData, messenger, shouldShowDocument, setShouldShowDocument]);
+
   const fetchAccountInformation = async () => {
     if (messenger) {
       setLoading(true);
       try {
         const account = await signer.getAccount();
-        const document = new JsonDocument("Account", account);
-        setJsonDocument(document);
-        const outline = new JsonOutline(document, ACCOUNT_KNOWN_PARTS);
-        setOutlineItems(outline.items);
-
-        await messenger.send("showJsonOutline", {
-          id: document.id,
-          json: document.jsonString,
-          outlineItems: outline.items,
-        });
+        setAccountData(account);
+        setShouldShowDocument(true);
       } catch (error: unknown) {
         await messenger.send("showError", { message: "Failed to get account info", detail: String(error) });
       }
@@ -72,7 +90,7 @@ function AccountActions({ signer, open, onToggle }: AccountActionsProps) {
   };
 
   const handleAccountToggled = async (open: boolean) => {
-    if (messenger && open && !jsonDocument) {
+    if (open && !jsonDocument) {
       await fetchAccountInformation();
     }
   };

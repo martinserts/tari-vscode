@@ -5,7 +5,7 @@ import { getPropertyDetails } from "../tree-node-helpers";
 import { SUBSTATE_ICON } from "./substate-list";
 
 const substateRoot: KnownJsonPart = {
-  path: ["value", "substate", "*"],
+  path: ["value", "*"],
   getOutlineItem: (node) => {
     const property = node.parent;
     const propertyDetails = getPropertyDetails(property);
@@ -24,7 +24,7 @@ const substateRoot: KnownJsonPart = {
 };
 
 const vaultResourceContainer: KnownJsonPart = {
-  path: ["value", "substate", "Vault", "resource_container"],
+  path: ["value", "Vault", "resource_container"],
   getOutlineItem: () => {
     return {
       title: "Resource Container",
@@ -34,7 +34,7 @@ const vaultResourceContainer: KnownJsonPart = {
 };
 
 const componentAccessRules: KnownJsonPart = {
-  path: ["value", "substate", "Component", "access_rules"],
+  path: ["value", "Component", "access_rules"],
   getOutlineItem: () => {
     return {
       title: "Access Rules",
@@ -44,7 +44,7 @@ const componentAccessRules: KnownJsonPart = {
 };
 
 const componentState: KnownJsonPart = {
-  path: ["value", "substate", "Component", "body", "state"],
+  path: ["value", "Component", "body", "state"],
   getOutlineItem: (node, json) => {
     let hoverMessage: Markdown | undefined;
 
@@ -68,7 +68,7 @@ const componentState: KnownJsonPart = {
 };
 
 const componentEntityId: KnownJsonPart = {
-  path: ["value", "substate", "Component", "entity_id"],
+  path: ["value", "Component", "entity_id"],
   getOutlineItem: () => {
     return {
       title: "Entity ID",
@@ -78,7 +78,7 @@ const componentEntityId: KnownJsonPart = {
 };
 
 const componentModuleName: KnownJsonPart = {
-  path: ["value", "substate", "Component", "module_name"],
+  path: ["value", "Component", "module_name"],
   getOutlineItem: (node) => {
     const property = node.parent;
     const propertyDetails = getPropertyDetails(property);
@@ -95,7 +95,7 @@ const componentModuleName: KnownJsonPart = {
 };
 
 const componentTemplateAddress: KnownJsonPart = {
-  path: ["value", "substate", "Component", "template_address"],
+  path: ["value", "Component", "template_address"],
   getOutlineItem: () => {
     return {
       title: "Template Address",

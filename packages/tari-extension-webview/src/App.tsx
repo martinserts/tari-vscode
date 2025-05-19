@@ -12,7 +12,12 @@ function App() {
   const signer = useTariStore((state) => state.signer);
   const configuration = useTariStore((state) => state.configuration);
   const setConfiguration = useTariStore((state) => state.setConfiguration);
+  const restoreState = useTariStore((state) => state.restoreState);
   const [signersOpen, setSignersOpen] = useState(true);
+
+  useEffect(() => {
+    restoreState().catch(console.log);
+  }, [restoreState]);
 
   useEffect(() => {
     if (messenger) {

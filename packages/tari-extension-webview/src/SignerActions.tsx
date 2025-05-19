@@ -6,7 +6,8 @@ import SubstateDetailsActions from "./actions/SubstateDetailsActions";
 import { useState } from "react";
 import TemplateActions from "./actions/TemplateActions";
 import TransactionExecutionActions from "./actions/TransactionExecutionActions";
-import { useTariStore, TariStore, TariStoreAction } from "./store/tari-store";
+import { useTariStore } from "./store/tari-store";
+import { TariStore, TariStoreAction } from "./store/types";
 import { useShallow } from "zustand/shallow";
 
 const selector = (state: TariStore & TariStoreAction) => ({

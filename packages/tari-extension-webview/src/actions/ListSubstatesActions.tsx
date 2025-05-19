@@ -16,15 +16,30 @@ import "./list-substates.css";
 import { useTariStore } from "../store/tari-store";
 import { JsonDocument } from "../json-parser/JsonDocument";
 import { JsonOutlineItem } from "tari-extension-common";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import JsonOutlineTree from "../components/JsonOutlineTree";
 import { JsonOutline } from "../json-parser/JsonOutline";
 import { SUBSTATE_LIST_PARTS } from "../json-parser/known-parts/substate-list";
 import { SubstateType } from "@tari-project/typescript-bindings";
 import { useCollapsibleToggle } from "../hooks/collapsible-toggle";
+import { TariStore, TariStoreAction } from "../store/types";
+import { useShallow } from "zustand/shallow";
 
 const DEFAULT_LIMIT = 15;
 const DEFAULT_OFFSET = 0;
+
+const selector = (state: TariStore & TariStoreAction) => ({
+  substates: state.listSubstatesState.substates,
+  substateType: state.listSubstatesState.substateType,
+  templateAddress: state.listSubstatesState.templateAddress,
+  limit: state.listSubstatesState.limit,
+  offset: state.listSubstatesState.offset,
+  setSubstates: state.listSubstatesActions.setSubstates,
+  setSubstateType: state.listSubstatesActions.setSubstateType,
+  setTemplateAddress: state.listSubstatesActions.setTemplateAddress,
+  setLimit: state.listSubstatesActions.setLimit,
+  setOffset: state.listSubstatesActions.setOffset,
+});
 
 interface ListSubstatesActionsProps {
   signer: TariSigner;
@@ -35,13 +50,22 @@ interface ListSubstatesActionsProps {
 
 function ListSubstatesActions({ signer, onViewDetails, open, onToggle }: ListSubstatesActionsProps) {
   const messenger = useTariStore((state) => state.messenger);
+  const {
+    substates,
+    substateType,
+    templateAddress,
+    limit,
+    offset,
+    setSubstates,
+    setSubstateType,
+    setTemplateAddress,
+    setLimit,
+    setOffset,
+  } = useTariStore(useShallow(selector));
   const [jsonDocument, setJsonDocument] = useState<JsonDocument | undefined>(undefined);
   const [outlineItems, setOutlineItems] = useState<JsonOutlineItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [subsateType, setSubstateType] = useState<SubstateType | undefined>(undefined);
-  const [tempateAddress, setTemplateAddress] = useState<string | null>(null);
-  const [limit, setLimit] = useState(DEFAULT_LIMIT);
-  const [offset, setOffset] = useState(DEFAULT_OFFSET);
+  const [shouldShowDocument, setShouldShowDocument] = useState(false);
 
   const collapsibleRef = useCollapsibleToggle(onToggle ?? (() => undefined));
 
@@ -56,27 +80,42 @@ function ListSubstatesActions({ signer, onViewDetails, open, onToggle }: ListSub
     }
   };
 
+  useEffect(() => {
+    if (!open || !substates || !messenger) {
+      return;
+    }
+    const document = new JsonDocument("Substates", substates);
+    setJsonDocument(document);
+    const outline = new JsonOutline(document, SUBSTATE_LIST_PARTS);
+    setOutlineItems(outline.items);
+
+    if (shouldShowDocument) {
+      messenger
+        .send("showJsonOutline", {
+          id: document.id,
+          json: document.jsonString,
+          outlineItems: outline.items,
+        })
+        .then(() => {
+          setShouldShowDocument(false);
+        })
+        .catch(console.error);
+    }
+  }, [open, substates, messenger, shouldShowDocument, setShouldShowDocument]);
+
   const fetchSubstateList = async () => {
     if (messenger) {
       setLoading(true);
       try {
         const request = {
-          filter_by_template: tempateAddress,
-          filter_by_type: subsateType ?? null,
-          limit,
-          offset,
+          filter_by_template: templateAddress?.length ? templateAddress : null,
+          filter_by_type: substateType ?? null,
+          limit: limit ?? DEFAULT_LIMIT,
+          offset: offset ?? DEFAULT_OFFSET,
         };
         const substates = await signer.listSubstates(request);
-        const document = new JsonDocument("Substates", substates);
-        setJsonDocument(document);
-        const outline = new JsonOutline(document, SUBSTATE_LIST_PARTS);
-        setOutlineItems(outline.items);
-
-        await messenger.send("showJsonOutline", {
-          id: document.id,
-          json: document.jsonString,
-          outlineItems: outline.items,
-        });
+        setSubstates(substates);
+        setShouldShowDocument(true);
       } catch (error: unknown) {
         await messenger.send("showError", { message: "Failed to list substates", detail: String(error) });
       }
@@ -92,6 +131,7 @@ function ListSubstatesActions({ signer, onViewDetails, open, onToggle }: ListSub
             <VscodeLabel htmlFor="substateType">Substate Type</VscodeLabel>
             <VscodeSingleSelect
               id="substateType"
+              value={substateType}
               onChange={(event) => {
                 const target = event.target as ve.VscodeSingleSelect;
                 setSubstateType(target.value.length ? (target.value as SubstateType) : undefined);
@@ -131,9 +171,10 @@ function ListSubstatesActions({ signer, onViewDetails, open, onToggle }: ListSub
             <VscodeLabel htmlFor="templateAddress">Template Address</VscodeLabel>
             <VscodeTextfield
               id="templateAddress"
+              value={templateAddress ?? ""}
               onInput={(event) => {
                 const target = event.target as ve.VscodeTextfield;
-                setTemplateAddress(target.value || null);
+                setTemplateAddress(target.value);
               }}
             />
           </VscodeFormGroup>
@@ -144,10 +185,10 @@ function ListSubstatesActions({ signer, onViewDetails, open, onToggle }: ListSub
               type="number"
               min={1}
               pattern="\d+"
-              value={limit.toString()}
+              value={limit ? limit.toString() : ""}
               onInput={(event) => {
                 const target = event.target as ve.VscodeTextfield;
-                setLimit(getNumber(target.value, DEFAULT_LIMIT));
+                setLimit(getNumber(target.value));
               }}
             />
           </VscodeFormGroup>
@@ -158,10 +199,10 @@ function ListSubstatesActions({ signer, onViewDetails, open, onToggle }: ListSub
               type="number"
               min={0}
               pattern="\d+"
-              value={offset.toString()}
+              value={offset ? offset.toString() : ""}
               onInput={(event) => {
                 const target = event.target as ve.VscodeTextfield;
-                setOffset(getNumber(target.value, DEFAULT_OFFSET));
+                setOffset(getNumber(target.value));
               }}
             />
           </VscodeFormGroup>
@@ -198,9 +239,9 @@ function ListSubstatesActions({ signer, onViewDetails, open, onToggle }: ListSub
   );
 }
 
-function getNumber(text: string, def: number): number {
+function getNumber(text: string): number | undefined {
   const n = parseInt(text);
-  return Number.isNaN(n) ? def : n;
+  return Number.isNaN(n) ? undefined : n;
 }
 
 export default ListSubstatesActions;

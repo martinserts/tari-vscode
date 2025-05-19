@@ -21,7 +21,7 @@ export class TariViewProvider<T extends AllowedActions<keyof T>> implements vsco
       enableScripts: true,
       localResourceRoots: [this.extensionUri],
     };
-    webviewView.webview.html = await getHtmlForWebview(webView, this.extensionUri, "webview");
+    webView.html = await getHtmlForWebview(webView, this.extensionUri, "webview");
 
     this.messenger = new Messenger<T>({
       sendMessage: (msg) => webView.postMessage(msg),

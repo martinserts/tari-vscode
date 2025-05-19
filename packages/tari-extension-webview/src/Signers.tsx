@@ -14,19 +14,14 @@ import {
 } from "@vscode-elements/react-elements";
 import * as ve from "@vscode-elements/elements";
 import { useTariStore } from "./store/tari-store";
-import {
-  TariPermissions,
-  WalletDaemonFetchParameters,
-  WalletDaemonTariSigner,
-} from "@tari-project/wallet-daemon-signer";
 import { WalletConnectTariSigner } from "@tari-project/wallet-connect-signer";
 import { TariConfiguration, TariNetwork, TariProviderType } from "tari-extension-common";
 import { useCallback, useRef, useState } from "react";
 import { useCollapsibleToggle } from "./hooks/collapsible-toggle";
 import { useEnterKey } from "./hooks/textfield-enter";
+import { DEFAULT_TARI_PROJECT_ID, DEFAULT_WALLET_DAEMON_ADDRESS } from "./constants";
+import { createWalletDaemonSigner } from "./utils/signers";
 
-const DEFAULT_WALLET_DAEMON_ADDRESS = "http://127.0.0.1:12010/json_rpc";
-const DEFAULT_TARI_PROJECT_ID = "1825b9dd9c17b5a33063ae91cbc48a6e";
 const PROVIDERS = [TariProviderType.WalletDemon, TariProviderType.WalletConnect];
 
 interface SignersProps {
@@ -61,12 +56,7 @@ function Signers({ configuration, open, onToggle }: SignersProps) {
   };
 
   const handleWalletDaemonConnect = useCallback(async () => {
-    const permissions = new TariPermissions().addPermission("Admin");
-    const params: WalletDaemonFetchParameters = {
-      permissions,
-      serverUrl: walletDaemonAddress || DEFAULT_WALLET_DAEMON_ADDRESS,
-    };
-    const walletDaemonProvider = await WalletDaemonTariSigner.buildFetchSigner(params);
+    const walletDaemonProvider = await createWalletDaemonSigner(walletDaemonAddress || DEFAULT_WALLET_DAEMON_ADDRESS);
     const accountData = await walletDaemonProvider.getAccount();
     setAccountData(accountData);
     setSigner(walletDaemonProvider);
