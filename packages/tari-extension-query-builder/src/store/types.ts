@@ -20,6 +20,8 @@ export enum GenericNodeType {
   StartNode = "startNode",
   EmitLogNode = "emitLogNode",
   AssertBucketContains = "assertBucketContains",
+  AllocateComponentAddress = "allocateComponentAddress",
+  AllocateResourceAddress = "allocateResourceAddress",
 }
 
 export interface CallNodeMetadata {
@@ -31,7 +33,7 @@ export interface CallNodeMetadata {
 }
 
 export type GenericNodeMetadata = CallNodeMetadata;
-export type GenericNodeIcon = "enter" | "rocket" | "home" | "cube" | "check-circled";
+export type GenericNodeIcon = "enter" | "rocket" | "home" | "cube" | "check-circled" | "archive" | "component";
 export enum InputConnectionType {
   None = 0,
   Parameter,

@@ -1,5 +1,13 @@
 import { GenericNodeIcon } from "@/store/types";
-import { CheckCircledIcon, CubeIcon, EnterIcon, HomeIcon, RocketIcon } from "@radix-ui/react-icons";
+import {
+  ArchiveIcon,
+  CheckCircledIcon,
+  Component1Icon,
+  CubeIcon,
+  EnterIcon,
+  HomeIcon,
+  RocketIcon,
+} from "@radix-ui/react-icons";
 
 interface NodeIconProps {
   icon: GenericNodeIcon;
@@ -19,6 +27,10 @@ function NodeIcon(props: NodeIconProps) {
       return <CubeIcon className={className} />;
     case "check-circled":
       return <CheckCircledIcon className={className} />;
+    case "archive":
+      return <ArchiveIcon className={className} />;
+    case "component":
+      return <Component1Icon className={className} />;
   }
 }
 

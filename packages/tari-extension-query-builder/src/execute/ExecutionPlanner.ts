@@ -192,10 +192,7 @@ export class ExecutionPlanner {
       if (!data.inputs) {
         return [];
       }
-      const values = data.values;
-      if (!values) {
-        return [nodeId];
-      }
+      const values = data.values ?? {};
       const hasMissingParams = data.inputs.some((input) => {
         const name = input.name;
         const value = values[name];
@@ -292,19 +289,18 @@ export class ExecutionPlanner {
         throw new Error(`Could not find node ${nodeId}`);
       }
       const { data } = node;
-      const values = data.values;
-      const allArgs =
-        values && data.inputs
-          ? data.inputs.map((input) => {
-              const key = `${nodeId}:${input.name}`;
-              const argValue: ArgValue = inputParamsConnections.get(key) ??
-                genericNodeConnections.get(key) ?? {
-                  type: "other",
-                  value: values[input.name].data,
-                };
-              return { name: input.name, value: argValue };
-            })
-          : [];
+      const values = data.values ?? {};
+      const allArgs = data.inputs
+        ? data.inputs.map((input) => {
+            const key = `${nodeId}:${input.name}`;
+            const argValue: ArgValue = inputParamsConnections.get(key) ??
+              genericNodeConnections.get(key) ?? {
+                type: "other",
+                value: values[input.name].data,
+              };
+            return { name: input.name, value: argValue };
+          })
+        : [];
       const [args, componentAddress] =
         allArgs.length && allArgs[0].name === COMPONENT_ADDRESS_NAME
           ? [allArgs.slice(1), allArgs[0].value]
@@ -350,9 +346,29 @@ export class ExecutionPlanner {
         case GenericNodeType.AssertBucketContains:
           // TODO: `Instruction` does not have this instruction yet
           break;
+
+        case GenericNodeType.AllocateComponentAddress:
+          descriptions.push({
+            type: "allocateComponentAddress",
+            workspaceId: nodeId,
+          });
+          break;
+
+        case GenericNodeType.AllocateResourceAddress:
+          descriptions.push({
+            type: "allocateResourceAddress",
+            workspaceId: nodeId,
+          });
+          break;
       }
 
-      if (data.output && connectedParents.has(nodeId)) {
+      if (
+        data.output &&
+        connectedParents.has(nodeId) &&
+        // For Address allocations the address is already stored in workspace
+        data.type !== GenericNodeType.AllocateComponentAddress &&
+        data.type !== GenericNodeType.AllocateResourceAddress
+      ) {
         descriptions.push({
           type: "saveVar",
           key: nodeId,
@@ -396,6 +412,12 @@ export class ExecutionPlanner {
               });
               break;
           }
+          break;
+        case "allocateComponentAddress":
+          builder.allocateAddress("Component", description.workspaceId);
+          break;
+        case "allocateResourceAddress":
+          builder.allocateAddress("Resource", description.workspaceId);
           break;
         case "saveVar":
           builder.saveVar(description.key);

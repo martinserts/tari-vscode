@@ -1,5 +1,7 @@
 import {
   AddInstructionDescription,
+  AllocateComponentAddress,
+  AllocateResourceAddress,
   ArgValue,
   CallFunctionDescription,
   CallMethodDescription,
@@ -227,6 +229,10 @@ export class BuilderCodegen {
             return this.createAddInstruction(description);
           case "saveVar":
             return this.createSaveVar(description);
+          case "allocateComponentAddress":
+            return this.createAllocateComponentAddress(description);
+          case "allocateResourceAddress":
+            return this.createAllocateResourceAddress(description);
         }
       }),
     );
@@ -347,6 +353,32 @@ export class BuilderCodegen {
         ),
         undefined,
         [factory.createStringLiteral(description.key)],
+      ),
+    );
+  }
+
+  private createAllocateComponentAddress(description: AllocateComponentAddress): ts.Statement {
+    return factory.createExpressionStatement(
+      factory.createCallExpression(
+        factory.createPropertyAccessExpression(
+          factory.createIdentifier("builder"),
+          factory.createIdentifier("allocateAddress"),
+        ),
+        undefined,
+        [factory.createStringLiteral("Component"), factory.createStringLiteral(description.workspaceId)],
+      ),
+    );
+  }
+
+  private createAllocateResourceAddress(description: AllocateResourceAddress): ts.Statement {
+    return factory.createExpressionStatement(
+      factory.createCallExpression(
+        factory.createPropertyAccessExpression(
+          factory.createIdentifier("builder"),
+          factory.createIdentifier("allocateAddress"),
+        ),
+        undefined,
+        [factory.createStringLiteral("Resource"), factory.createStringLiteral(description.workspaceId)],
       ),
     );
   }

@@ -48,6 +48,16 @@ export interface AddInstructionDescription {
   args: ArgValue[];
 }
 
+export interface AllocateComponentAddress {
+  type: "allocateComponentAddress";
+  workspaceId: string;
+}
+
+export interface AllocateResourceAddress {
+  type: "allocateResourceAddress";
+  workspaceId: string;
+}
+
 export interface SaveVarDescription {
   type: "saveVar";
   key: string;
@@ -58,6 +68,8 @@ export type TransactionDescription =
   | CallMethodDescription
   | CallFunctionDescription
   | AddInstructionDescription
+  | AllocateComponentAddress
+  | AllocateResourceAddress
   | SaveVarDescription;
 
 export interface InputParameter {

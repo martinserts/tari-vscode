@@ -33,7 +33,16 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { CheckCircledIcon, EnterIcon, InputIcon, LayersIcon, PlayIcon, RocketIcon } from "@radix-ui/react-icons";
+import {
+  ArchiveIcon,
+  CheckCircledIcon,
+  Component1Icon,
+  EnterIcon,
+  InputIcon,
+  LayersIcon,
+  PlayIcon,
+  RocketIcon,
+} from "@radix-ui/react-icons";
 import GenericNode from "./nodes/generic/generic-node";
 import InputParamsNode from "./nodes/input/input-params-node";
 import { ExecutionPlanner } from "@/execute/ExecutionPlanner";
@@ -54,6 +63,7 @@ import { toast } from "sonner";
 import { LoadingSpinner } from "../ui/loading-spinner";
 import { BuilderCodegen } from "@/codegen/BuilderCodegen";
 import { getNextAvailable } from "@/lib/get-next-available";
+import { ALLOCATE_COMPONENT_ADDRESS_RESULT, ALLOCATE_RESOURCE_ADDRESS_RESULT } from "./nodes/generic-node.types";
 
 export type Theme = "dark" | "light";
 
@@ -326,6 +336,58 @@ function Flow({
     });
   }, [addNodeAt]);
 
+  const handleAddAllocateComponentAddressNode = useCallback(() => {
+    addNodeAt({
+      type: NodeType.GenericNode,
+      data: {
+        type: GenericNodeType.AllocateComponentAddress,
+        hasEnterConnection: true,
+        hasExitConnection: true,
+        icon: "component",
+        title: "Allocate Component Address",
+        inputs: [
+          {
+            inputConnectionType: InputConnectionType.None,
+            name: "component_name",
+            label: "Component Name",
+            type: "String",
+          },
+        ],
+        output: {
+          type: { Other: { name: "ComponentAddressAllocation" } },
+          name: ALLOCATE_COMPONENT_ADDRESS_RESULT,
+          label: "ComponentAddressAllocation",
+        },
+      },
+    });
+  }, [addNodeAt]);
+
+  const handleAddAllocateResourceAddressNode = useCallback(() => {
+    addNodeAt({
+      type: NodeType.GenericNode,
+      data: {
+        type: GenericNodeType.AllocateResourceAddress,
+        hasEnterConnection: true,
+        hasExitConnection: true,
+        icon: "archive",
+        title: "Allocate Resource Address",
+        inputs: [
+          {
+            inputConnectionType: InputConnectionType.None,
+            name: "resource_name",
+            label: "Resource Name",
+            type: "String",
+          },
+        ],
+        output: {
+          type: { Other: { name: "ResourceAddressAllocation" } },
+          name: ALLOCATE_RESOURCE_ADDRESS_RESULT,
+          label: "ResourceAddressAllocation",
+        },
+      },
+    });
+  }, [addNodeAt]);
+
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
@@ -456,6 +518,14 @@ function Flow({
                       <DropdownMenuItem onSelect={handleAddAssertBucketContainsNode}>
                         <CheckCircledIcon />
                         Assert Bucket Contains
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={handleAddAllocateComponentAddressNode}>
+                        <Component1Icon />
+                        Allocate Component Address
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={handleAddAllocateResourceAddressNode}>
+                        <ArchiveIcon />
+                        Allocate Resource Address
                       </DropdownMenuItem>
                     </DropdownMenuSubContent>
                   </DropdownMenuPortal>
